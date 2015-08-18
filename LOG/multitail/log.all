@@ -1,0 +1,17 @@
+#! /bin/sh
+
+PTH="/var/log"
+
+if [ -e $PTH/syslog ]; then
+	BLOG="syslog"
+	SLOG="auth.log"
+else
+	BLOG="messages"
+	SLOG="secure"
+fi
+
+if [ -e /usr/bin/multitail ]; then
+	multitail -wh 5 $PTH/$SLOG $PTH/$BLOG
+else
+	less +F $PTH/$BLOG
+fi

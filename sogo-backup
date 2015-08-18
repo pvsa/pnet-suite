@@ -1,0 +1,56 @@
+#! /bin/sh
+## Created by PILARKTO.NET - PvSA
+## PvSA, 19.4.10
+## PvSA, 28.3.2011
+## PvSA, 9.6.2011: for all
+## PvSA, 6.7.2011: su und Debug-Info 
+
+## DEBUG
+#set -x
+
+DATE="`date +'%Y%m%d_%H%M%S'`"
+#STOOL="/usr/GNUstep/System/Tools/Admin/sogo-tool"
+# Changed after upgrade to 1.3.9
+STOOL="/usr/sbin/sogo-tool"
+
+mkdir -p /home/sogo/Backup
+cd /home/sogo/Backup
+
+mkdir tmp_$DATE
+chown sogo:sogo tmp_$DATE
+chmod -R 770 tmp_$DATE
+cd tmp_$DATE
+
+if [ `whoami` = "sogo" ]; then
+	if [ "$1" = "-i" ]; then
+        	$STOOL -v backup ./ ALL
+	else
+        	$STOOL backup ./ ALL >> output 2>&1
+	fi
+else
+	if [ "$1" = "-i" ]; then
+        	su sogo -c "$STOOL -v backup ./ ALL"
+	else
+        	su sogo -c "$STOOL backup ./ ALL" >> output 2>&1
+	fi
+
+        fi
+
+
+#su sogo -c "sogo-tool backup ./ ALL" > /dev/null 2>&1
+#echo "Exit-Code: $?"
+#exit 1
+
+if [ "$?" != "0" ];then
+	echo "!!!!!"
+	echo "Error: Backing up with sogo-tool failed"
+	echo ""
+	cat output
+else
+	mkdir -p ../STORE/$DATE
+	chmod -R 770 ../STORE/$DATE
+	mv * ../STORE/$DATE/
+fi
+
+cd ..
+rm -rf tmp_$DATE

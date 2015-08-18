@@ -1,0 +1,26 @@
+#! /bin/sh
+
+# imap check
+if [ -e /var/log/dovecot.log ];then
+
+	if [ -e /var/log/maillog ];then
+		# rh, postfix + dovecot
+		tail -f /var/log/maillog /var/log/dovecot.log
+	else
+		# deb, postfix + dovecot
+		tail -f /var/log/mail.log /var/log/dovecot.log
+	fi
+
+# postfix only
+else
+       if [ -e /var/log/maillog ];then
+                # rh, only postfix 
+                less +F /var/log/maillog
+	else
+                # deb, postfix only
+                less +F /var/log/mail.log
+        fi
+
+fi
+
+

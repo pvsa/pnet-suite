@@ -1,0 +1,17 @@
+#! /bin/sh
+
+#multitail or less
+if [ -e /usr/bin/multitail ];then
+	PLOG="multitail"
+else
+	PLOG"less +F"
+fi
+
+## log ldap
+if [ -e /var/log/ldap.log ]; then
+	$PLOG /var/log/ldap.log
+else
+	$PLOG /var/log/syslog
+fi	
+
+

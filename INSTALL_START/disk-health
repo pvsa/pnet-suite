@@ -1,0 +1,37 @@
+#! /bin/bash
+#deb
+#rh
+#gentoo
+
+##DEBUG
+#set -x
+
+DATE="`date '+%Y%m%d%H%M'`"
+TMPF="/tmp/disk-health_$DATE"
+DISKS="/tmp/disk-health_disks_$DATE"
+## check for smartmontools installed
+
+if [ ! -e /usr/sbin/smartctl ]; then
+	echo "SMART Mon Tools not installed"
+	exit 1	
+fi
+
+## check at dmesg
+cat /var/log/dmesg |grep -i -E "ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
+
+## search useable disks
+/usr/sbin/smartctl --scan |cut -d " " -f 1 > $DISKS
+
+## check smart
+
+while read line
+do
+    name=$line
+	smartctl -H -q errorsonly $line  >> $TMPF
+done < $DISKS
+
+cat $TMPF
+
+
+rm $DISKS
+rm $TMPF

@@ -1,0 +1,103 @@
+#!/bin/bash
+
+## DEBUG
+if [ "$1" = "dbg" ]; then
+	set -x
+fi
+
+# enable echo-color
+echo -e -n "\033[1;33m"
+
+
+# Clear any existing firewall stuff before we start
+# FLUSH:
+echo ">>>>>>> IPTables Flush <<<<<<<<"
+iptables --flush
+iptables -t nat --flush
+iptables -t mangle --flush
+
+# As the default policies, drop all incoming traffic but allow all
+# outgoing traffic.  This will allow us to make outgoing connections
+# from any port, but will only allow incoming connections on the ports
+# specified below.
+
+# POLICIES
+echo ">>>>>>> IPTables Policy <<<<<<<<"
+iptables --policy INPUT DROP
+iptables --policy OUTPUT ACCEPT
+iptables --policy FORWARD DROP
+
+## FORWRDING ALLOW
+# echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# Allow all incoming traffic if it is coming from the local loopback device
+
+iptables -A INPUT -i lo -j ACCEPT
+
+### IFACE VARS
+##Interface IP's
+# lan_ip="192.168.2.1"
+
+
+##Interface IP Ranges
+# lan_iprange="192.168.2.0/24"
+
+
+### IFACES
+# lan=eth0
+
+
+######################################
+
+# SERVICES
+echo ">>>>>>> IPTables Services <<<<<<<<"
+
+iptables -A INPUT  -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# RESCUE!!!!! 
+
+# SSH
+iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT 
+# WEB
+iptables -A INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
+#iptables -A INPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
+# Webmin
+iptables -A INPUT -p tcp --dport 10000 -m state --state NEW -j ACCEPT
+# Nagios-NRPE
+#iptables -A INPUT -p tcp --dport 5666 -m state --state NEW -j ACCEPT
+
+
+
+#WEITERLEITUNG
+
+
+# MASQURADE
+# versteck = mehr rechte als selber ...
+
+
+
+# Allow icmp input so that people can ping us
+
+iptables -A INPUT -p icmp -j ACCEPT
+
+# Logging: first, eliminate any packets that are going to broadcast
+# addresses, since they will overwhelm the log files if there are any
+# windows computers on our network. Also, don't log pesky multicast
+# packets that we block. 
+
+iptables -A INPUT -d 255.255.255.255/0.0.0.255 -j DROP
+iptables -A INPUT -d 224.0.0.1 -j DROP
+
+echo ">>>>>>> IPTables Log <<<<<<<<"
+# additional LOG for debug
+#iptables -A FORWARD -j LOG
+#iptables -A INPUT -j LOG
+
+# Log all other blocked packets, and change DROP to REJECT to be
+# polite and allow people connecting to a blocked port to receive a
+# >connection refused< message instead of timing out after 30 seconds.
+iptables -A INPUT -j REJECT
+
+# disable echo-color
+echo -e -n "\033[0m"
+#echo -E -n ""
