@@ -17,7 +17,7 @@ if [ ! -e /usr/sbin/smartctl ]; then
 fi
 
 ## check at dmesg
-cat /var/log/dmesg |grep -i -E "ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
+cat /var/log/dmesg |grep -i -E "drbd|ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
 
 ## search useable disks
 /usr/sbin/smartctl --scan |cut -d " " -f 1 > $DISKS
