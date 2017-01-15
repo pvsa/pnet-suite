@@ -8,4 +8,6 @@ DISK="sdd"
 DISKROT=$(cat /sys/block/$DISK/queue/rotational)
 if [ $DISKROT = 0 ]; then
 	echo noop >	/sys/block/$DISK/queue/scheduler	
+else
+	echo deadline > /sys/block/$DISK/queue/scheduler
 fi
