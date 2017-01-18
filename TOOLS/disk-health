@@ -38,13 +38,17 @@ do
 	if [ $DISKTYPE = 0 ]; then
 	RSCMAX="$RSCMAXSSD"
 	RSC=$(smartctl -a $line |grep "Reallocated_Event_Count" | cut -d " " -f 32)	
+	# for mushkin it is event_count, for samsung its realloc_Sector
+	if [ "$RSC" = "" ]; then
+		RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
+	fi
 	## HDD
 	else
 	RSCMAX="$RSCMAXHDD"
 	RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
 	fi
 	## beides
-	if [ $RSC -gt $RSCMAX ]; then
+	if [ "$RSC" -gt "$RSCMAX" ]; then
 		echo "Warning: $line Reallocated Sectors/Events is greater than Limit ($RSCMAX): $RSC" >> $TMPF
 	fi
 	
