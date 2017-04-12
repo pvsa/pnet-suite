@@ -6,7 +6,7 @@
 
 ##PROGRAM
 service nginx stop  # or whatever your webserver is
-letsencrypt renew -nvv --standalone > /var/log/letsencrypt/renew.log 2>&1
+certbot renew --standalone > /var/log/letsencrypt/renew.log 2>&1
 LE_STATUS=$?
 service nginx start # or whatever your webserver is
 if [ "$LE_STATUS" != 0 ]; then
