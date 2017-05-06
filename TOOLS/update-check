@@ -32,7 +32,11 @@ elif [ -e /etc/yum.conf ];then
         yum -q check-update >> /tmp/update-check.log
 elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
 	#Update Portage
-	emerge --sync -q >> /dev/null
+	emerge --sync -q &> /dev/null
+	if [ $? -ne 0 ]; then
+		echo "Portage Update failed - Trying again without quiet option"
+		emerge --sync
+	fi
 	#Vulnerability Check
         if [ -e /usr/bin/glsa-check ]; then
                 GLSA="`glsa-check -q -t affected 2>/dev/null`"
