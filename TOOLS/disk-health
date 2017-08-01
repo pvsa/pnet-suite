@@ -6,6 +6,10 @@
 ##DEBUG
 #set -x
 
+## VAR
+RSCMAXSSD=0
+RSCMAXHDD=5
+
 DATE="`date '+%Y%m%d%H%M'`"
 TMPF="/tmp/disk-health_$DATE"
 DISKS="/tmp/disk-health_disks_$DATE"
@@ -27,7 +31,27 @@ cat /var/log/dmesg |grep -i -E "drbd|ata|scsi|ide" |grep -i -E "fail|error|fault
 while read line
 do
     name=$line
+	sline=$(echo $line |cut -d "/" -f 3)
+	DISKTYPE=$(cat /sys/block/$sline/queue/rotational)
 	smartctl -H -q errorsonly $line  >> $TMPF
+	# SSD
+	if [ $DISKTYPE = 0 ]; then
+	RSCMAX="$RSCMAXSSD"
+	RSC=$(smartctl -a $line |grep "Reallocated_Event_Count" | cut -d " " -f 32)	
+	# for mushkin it is event_count, for samsung its realloc_Sector
+	if [ "$RSC" = "" ]; then
+		RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
+	fi
+	## HDD
+	else
+	RSCMAX="$RSCMAXHDD"
+	RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
+	fi
+	## beides
+	if [ "$RSC" -gt "$RSCMAX" ]; then
+		echo "Warning: $line Reallocated Sectors/Events is greater than Limit ($RSCMAX): $RSC" >> $TMPF
+	fi
+	
 done < $DISKS
 
 cat $TMPF

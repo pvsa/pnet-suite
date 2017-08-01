@@ -5,6 +5,8 @@ if [ -e /var/log/apache2/error.log ];then
 	less +F /var/log/apache2/error.log
 elif [ -e /var/log/httpd/error_log ];then
 	less +F /var/log/httpd/error_log
+elif [ -e /var/log/apache2/error_log ];then
+        less +F /var/log/apache2/error_log
 else
 	echo "No Apache Error-Logs found!"
 fi

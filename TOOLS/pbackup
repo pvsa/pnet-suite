@@ -9,7 +9,7 @@
 VON=`echo "$1" | sed -e 's,/$,,' `
 #NACH=$2
 USER=`whoami`
-DATE=`date '+%Y%m%d-%H_%M'` 
+DATE=`date '+%Y%m%d-%H_%M_%S'` 
 STORE=/var/backups/pbackup
 STORE_NEW=$STORE/$USER-$DATE
 
