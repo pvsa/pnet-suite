@@ -13,8 +13,10 @@ RSCMAXHDD=5
 DATE="`date '+%Y%m%d%H%M'`"
 TMPF="/tmp/disk-health_$DATE"
 DISKS="/tmp/disk-health_disks_$DATE"
-## check for smartmontools installed
 
+function is_int() { return $(test "$@" -eq "$@" > /dev/null 2>&1); }
+
+## check for smartmontools installed
 if [ ! -e /usr/sbin/smartctl ]; then
 	echo "SMART Mon Tools not installed"
 	exit 1	
@@ -48,8 +50,18 @@ do
 	RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
 	fi
 	## beides
-	if [ "$RSC" -gt "$RSCMAX" ]; then
-		echo "Warning: $line Reallocated Sectors/Events is greater than Limit ($RSCMAX): $RSC" >> $TMPF
+	## Leere oder unbrauchbaren Output abfangen
+	if $(is_int "${RSC}"); then
+	#if ["$RSC" = "" ]; then
+		if [ "$RSC" -gt "$RSCMAX" ]; then
+			echo "Warning: $line Reallocated Sectors/Events is greater than Limit ($RSCMAX): $RSC" >> $TMPF
+		fi
+	else
+		echo "An error with smartctl and disk $line occurred. Complet output of smartctl follows:"
+		echo "----------------------------------------------"
+		smartctl -a $line
+		echo "----------------------------------------------"
+
 	fi
 	
 done < $DISKS
