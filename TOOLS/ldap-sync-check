@@ -7,10 +7,11 @@
 PAL="root"
 TMPDIR="/tmp/ldap-sync-check"
 TMPDIR2="/tmp/ldap-sync-check/log"
-MASTERURI="ldaps://SERVER"
-REPUSER="FULL-UID-OF-OREPLICA-USER"
-BASE="QUERY-BASE"
-PASS="PASSWWORD"
+MASTERURI="ldaps://com6.pnet"
+REPUSER="uid=replica,dc=pilarkto,dc=net"
+BASE="dc=pilarkto,dc=net"
+PASS="k98HJgfd/(?JKjhGh678"
+GREPOPT="-irE \"'@(#) $OpenLDAP:'|syncrep\""
 
 mkdir -p $TMPDIR
 chmod 700 -R $TMPDIR
@@ -36,11 +37,11 @@ rcsn="$(ldapsearch -x -D "$REPUSER" -w "$PASS" -H $MASTERURI -LLL -x -s base -b 
 	echo "-------------------------------------------------"
 	echo "Syslog for debug purpose following (if exists in syslog):"
 	if [ -e /var/log/syslog ]; then
-		grep -ir slapd /var/log/syslog  >> $TMPDIR2
+		grep $GREPOPT /var/log/syslog  >> $TMPDIR2
 	elif [ -e /var/log/messages ]; then
-		grep -ir slapd /var/log/messages  >> $TMPDIR2
+		grep $GREPOPT /var/log/messages  >> $TMPDIR2
 	elif [ -e /var/log/ldap.log ]; then
-		tail /var/log/slapd 		>> $TMPDIR2
+		grep $GREPOPT /var/log/ldap.log 		>> $TMPDIR2
 	fi
 	echo "-------------------------------------------------"
 	cat $TMPDIR2 |mail -s "LDAP-Sync Check" $PAL
