@@ -7,12 +7,16 @@
 PAL="root"
 TMPDIR="/tmp/ldap-sync-check"
 TMPDIR2="/tmp/ldap-sync-check/log"
-MASTERURI="ldaps://com6.pnet"
+MASTERURI="ldaps://LDAPMASTERXXX"
 REPUSER="uid=replica,dc=pilarkto,dc=net"
 BASE="dc=pilarkto,dc=net"
 PASS="k98HJgfd/(?JKjhGh678"
 GREPOPT="-irE \"'@(#) $OpenLDAP:'|syncrep\""
 
+if [ "$MASTERURI"="LDAPMASTERXXX" ]; then
+	echo "Please set LDAP-Master Server - Exiting"
+	exit 1
+fi
 mkdir -p $TMPDIR
 chmod 700 -R $TMPDIR
 ## Get local contextCSN
