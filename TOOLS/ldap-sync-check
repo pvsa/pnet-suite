@@ -13,7 +13,7 @@ BASE="dc=pilarkto,dc=net"
 PASS="k98HJgfd/(?JKjhGh678"
 GREPOPT="-irE \"'@(#) $OpenLDAP:'|syncrep\""
 
-if [ "$MASTERURI" = "LDAPMASTERXXX" ]; then
+if [ "$MASTERURI" = "ldaps://LDAPMASTERXXX" ]; then
 	echo "Please set LDAP-Master Server - Exiting"
 	exit 1
 fi
