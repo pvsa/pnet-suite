@@ -4,7 +4,7 @@
 #gentoo
 
 ##DEBUG
-#set -x
+set -x
 
 ## VAR
 RSCMAXSSD=0
@@ -15,6 +15,8 @@ TMPF="/tmp/disk-health_$DATE"
 DISKS="/tmp/disk-health_disks_$DATE"
 
 function is_int() { return $(test "$@" -eq "$@" > /dev/null 2>&1); }
+
+## check for virtual system/disk
 
 ## check for smartmontools installed
 if [ ! -e /usr/sbin/smartctl ]; then
@@ -28,10 +30,14 @@ cat /var/log/dmesg |grep -i -E "drbd|ata|scsi|ide" |grep -i -E "fail|error|fault
 ## search useable disks
 /usr/sbin/smartctl --scan |cut -d " " -f 1 > $DISKS
 
+
 ## check smart
 
 while read line
 do
+if [ "$line" = "#" ]; then
+	echo "Not a useable disk (smartctl) - Skipping !"
+else
     name=$line
 	sline=$(echo $line |cut -d "/" -f 3)
 	DISKTYPE=$(cat /sys/block/$sline/queue/rotational)
@@ -63,7 +69,7 @@ do
 		echo "----------------------------------------------"
 
 	fi
-	
+fi	
 done < $DISKS
 
 cat $TMPF
