@@ -9,7 +9,7 @@
 #set -x
 
 ## CHANGE THIS TO REAL MAILADRESS ##
-PAL="root"
+PAL="root@localhost"
 
 ##
 SERVER="`hostname`"
