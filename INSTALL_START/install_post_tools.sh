@@ -19,6 +19,8 @@ cp /usr/share/pnet-suite/INSTALL_START/firewall-init.d /etc/local.d/firewall.sta
 chmod 755 /etc/local.d/firewall.start
 cp /usr/share/pnet-suite/INSTALL_START/firewall /etc/firewall
 chmod 755 /etc/firewall
+echo "6. localtime to Berlin"
+ln -sf /usr/share/zoneinfo/Europe/Berlin /etc/localtime
 echo "Finish"
 echo "following atoms are in world:"
 cat /var/lib/portage/world
