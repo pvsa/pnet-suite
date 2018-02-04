@@ -1,13 +1,16 @@
 #! /bin/sh
+#set -x
+
 BASEDIR="/var/log/sogo"
 
-LOGFILE="sogo.log"
-if [ -e $BASEDIR/$LOGFILE ]; then
-	less +F $BASEDIR/$LOGFILE
+LOGFILE1="sogo.log"
+LOGFILE2="sogod.log"
 
-LOGFILE="sogod.log"
-elif [ -e $BASEDIR/$LOGFILE ]; then
-	less +F $BASEDIR/$LOGFILE
+if [ -e $BASEDIR/$LOGFILE1 ]; then
+	less +F $BASEDIR/$LOGFILE1
+
+elif [ -e $BASEDIR/$LOGFILE2 ]; then
+	less +F $BASEDIR/$LOGFILE2
 else
 	echo "No Logfile found $BASEDIR sogo(d).log"
 fi
