@@ -1,2 +1,13 @@
 #! /bin/sh
-less +F /var/log/sogo/sogo.log
+BASEDIR="/var/log/sogo"
+
+LOGFILE="sogo.log"
+if [ -e $BASEDIR/$LOGFILE ]; then
+	less +F $BASEDIR/$LOGFILE
+
+LOGFILE="sogod.log"
+elif [ -e $BASEDIR/$LOGFILE ]; then
+	less +F $BASEDIR/$LOGFILE
+else
+	echo "No Logfile found $BASEDIR sogo(d).log"
+fi
