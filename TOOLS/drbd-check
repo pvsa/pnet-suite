@@ -1,0 +1,9 @@
+#!/bin/sh
+
+#set -x
+
+if [ "$(cat /proc/drbd |grep cs: |grep -v 'UpToDate/UpToDate')" != "" ]; then
+	cat /proc/drbd > /tmp/drbd-check.log
+	dmesg |grep -i drbd >> /tmp/drbd-check.log
+	cat /tmp/drbd-check.log |mail -s "$(hostname): DRBD-Check Warning" paladin@pilarkto.net
+fi
