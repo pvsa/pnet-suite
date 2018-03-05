@@ -26,7 +26,7 @@ if [ -e /etc/apt/sources.list ] && [ -e /etc/yum.conf ] && [ -e /etc/gentoo-rele
 # wenn nur apt
 elif [ -e /etc/apt/sources.list ]; then
         apt-get -qq update
-	if [ `apt-get dist-upgrade -s | grep -i security` != "" ]; then
+	if [ "`apt-get dist-upgrade -s | grep -i security`" != "" ]; then
         echo "Updates available for Debian/Ubuntu version: `cat /etc/debian_version` \n" >> $LOG
         #echo "" >> $LOG
         echo "================ `date` ====================== \n" >> $LOG
