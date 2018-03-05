@@ -26,18 +26,31 @@ if [ -e /etc/apt/sources.list ] && [ -e /etc/yum.conf ] && [ -e /etc/gentoo-rele
 # wenn nur apt
 elif [ -e /etc/apt/sources.list ]; then
         apt-get -qq update
+	if [ `apt-get dist-upgrade -s | grep -i security` != "" ]; then
         echo "Updates available for Debian/Ubuntu version: `cat /etc/debian_version` \n" >> $LOG
         #echo "" >> $LOG
         echo "================ `date` ====================== \n" >> $LOG
-        echo "n" | apt-get upgrade |grep -v '/n\]'| sed '1,3d' >> $LOG
-        echo "" >> $LOG
-        echo "Paket infos and version in Detail:" >> $LOG
+        #echo "n" | apt-get dist-upgrade |grep -v '/n\]'| sed '1,3d' >> $LOG
+        #echo "" >> $LOG
+        apt-get -V -s dist-upgrade     |grep -E "^   .*=>.*"     |awk 'BEGIN {
+        ul=sprintf("%*s",40,""); gsub(/ /,"-",ul);
+        printf "%-30s %-30s %-30s\n", "Package", "Installed", "Available";
+        printf "%-30.30s %-30.30s %-30.30s\n", ul, ul, ul;
+     }
+     {
+        printf "%-30s %-30s %-30s\n",
+               $1,
+               substr($2,2),
+               substr($4,1,length($4)-1)
+     }' >> $LOG
+	echo "" >> $LOG
+	echo "paket infos in detail:" >> $LOG
         echo "========================================================" >> $LOG
         aptitude search '~U' >> $LOG
         echo "--------------------------------------------------------" >> $LOG
         echo "For details of the status and falgs see:" >> $LOG
         echo " https://aptitude.alioth.debian.org/doc/en/ch02s02s02.html" >> $LOG
-
+	fi
 
 # wenn nur yum
 elif [ -e /etc/yum.conf ];then
