@@ -41,7 +41,7 @@ elif [ -e /etc/apt/sources.list ]; then
 
 # wenn nur yum
 elif [ -e /etc/yum.conf ];then
-        yum -q check-update >> /tmp/update-check.log
+        yum -q check-update >> $LOG
 elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
 	#Update Portage
 	emerge --sync -q &> /dev/null
@@ -53,7 +53,7 @@ elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
         if [ -e /usr/bin/glsa-check ]; then
                 GLSA="`glsa-check -q -t affected 2>/dev/null`"
                 if [ "$GLSA" != "" ] || [ $? != 0 ] ;then
-                glsa-check -p -n affected >> /tmp/update-check.log
+                glsa-check -p -n affected >> $LOG
                 fi
                 ## else here means, there are no affected GLSAs
         else
@@ -62,7 +62,7 @@ elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
 fi
 
 # Mail nur senden, wenn nicht leer
-if [ "`cat /tmp/update-check.log`" != "" ]; then
+if [ "`cat $LOG `" != "" ]; then
         cat $LOG| mail -s "$SERVER: Ausstehende Updates" $PAL
 fi
 
