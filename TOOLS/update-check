@@ -62,6 +62,10 @@ elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
 		echo "Portage Update failed - Trying again without quiet option"
 		emerge --sync
 	fi
+        which eix-update
+        if [ $? -eq 0 ]; then
+           eix-update -q
+      	fi
 	#Vulnerability Check
         if [ -e /usr/bin/glsa-check ]; then
                 GLSA="`glsa-check -q -t affected 2>/dev/null`"
