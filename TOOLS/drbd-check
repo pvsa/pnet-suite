@@ -8,7 +8,7 @@ if [ "$(cat /proc/drbd |grep cs: |grep -v 'UpToDate/UpToDate')" != "" ]; then
 	echo "" >> /tmp/drbd-check.log
 	echo "================COMPLETE-LOG================" >> /tmp/drbd-check.log
 	cat /proc/drbd >> /tmp/drbd-check.log
-	dmesg |grep -i drbd >> /tmp/drbd-check.log
+	dmesg -T|grep -i drbd >> /tmp/drbd-check.log
 	cat /tmp/drbd-check.log |mail -s "$(hostname): DRBD-Check Warning" paladin@pilarkto.net
 	rm /tmp/drbd-check.log
 fi
