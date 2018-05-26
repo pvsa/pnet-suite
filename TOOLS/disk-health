@@ -48,7 +48,7 @@ else
 	# SSD
 	if [ $DISKTYPE = 0 ]; then
 	RSCMAX="$RSCMAXSSD"
-	RSC=$(smartctl -a $line |grep "Reallocated_Event_Count" | cut -d " " -f 32)	
+	RSC=$(smartctl -a $line |grep "Reallocated_Event_Count" | cut -d " " -f 32-33 |sed 's/ //g')	
 	# for mushkin it is event_count, for samsung its realloc_Sector
 	if [ "$RSC" = "" ]; then
 		RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
