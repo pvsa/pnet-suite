@@ -26,7 +26,7 @@ fi
 
 ## check at dmesg
 #cat /var/log/dmesg |grep -i -E "drbd|ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
-dmesg -T |grep -i -E "drbd|ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
+dmesg -T |grep -i -E "ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
 dmesg -T |grep "sd\+[a-z]" |grep -i -E "fail|error|fault">> $TMPF
 dmesg -T |grep "dd\+[a-z]" |grep -i -E "fail|error|fault">> $TMPF
 
