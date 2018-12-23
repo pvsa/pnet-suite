@@ -1,16 +1,24 @@
 #! /bin/sh
-## Script to renew letsencrypt certs of nginx
+## Script to renew letsencrypt certs of nginx and normal standalone
 
 ##DEBUG
 #set -x
 
+## INIT CERTBOT WITH SOMETHING LIKE
+# certbot certonly -nvv --webroot -w /var/www/localhost/htdocs/ -d XXX,YYY --agree-tos --email ZZZ
+
 ##PROGRAM
+### CHOOSE...
+### STANDALONE
+#certbot renew -nvv --standalone > /var/log/letsencrypt/renew.log 2>&1
+### OR WEBSERVER RUNNING
 service nginx stop  # or whatever your webserver is
-certbot renew --standalone > /var/log/letsencrypt/renew.log 2>&1
+certbot renew -nvv --webroot -w /var/www/localhost/htdocs/ > /var/log/letsencrypt/renew.log 2>&1
+
 LE_STATUS=$?
 service nginx start # or whatever your webserver is
 if [ "$LE_STATUS" != 0 ]; then
-    echo Automated renewal failed:
+    echo Automated renewal failed, starting web-server anyway:
     cat /var/log/letsencrypt/renew.log
     exit 1
 fi
