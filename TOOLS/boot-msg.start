@@ -1,2 +1,0 @@
-#!/bin/sh
-dmesg > /var/log/boot.msg
