@@ -1,7 +1,0 @@
-#! /bin/bash
-
-if [ -e /var/log/vzctl.log ];then
-	less +F /var/log/vzctl.log
-else
-	echo "OpenVZ Log not found"
-fi
