@@ -1,0 +1,22 @@
+#! /bin/bash
+#set -x
+
+BASEDIR="/var/log/sogo"
+
+SOGOLOG="sogo.log"
+SOGODLOG="sogod.log"
+
+if [ -e $BASEDIR/$SOGOLOG ] && [ -e $BASEDIR/$SOGODLOG ]; then
+	if [ ! -s $BASEDIR/$SOGOLOG ]; then
+		less +F $BASEDIR/$SOGODLOG
+	else
+		tail -f $BASEDIR/$SOGOLOG $BASEDIR/$SOGODLOG
+	fi
+elif [ -e $BASEDIR/$SOGODLOG ]; then
+	less +F $BASEDIR/$SOGODLOG
+
+elif [ -e $BASEDIR/$SOGOLOG ]; then
+	less +F $BASEDIR/$SOGOLOG
+else
+	echo "No Logfile found $BASEDIR sogo(d).log"
+fi

@@ -1,0 +1,27 @@
+#!/bin/sh
+## Script for renew certbot-cert with restart and check service-restart
+
+## renew cert
+certbot renew -nvv --standalone  > /var/log/letsencrypt/renew.log 2>&1
+#certbot renew -nvv --standalone -d XXX,YYY > /var/log/letsencrypt/renew.log 2>&1
+## get status for later use
+LE_STATUS0=$?
+
+if [ "$LE_STATUS0" != 0 ]; then
+    echo Automated cert renewal failed:
+    cat /var/log/letsencrypt/renew.log
+    exit 1
+else
+## if cert renewe success than restart services and check for success
+        /etc/init.d/postfix restart
+        LE_STATUS1=$?
+                if [ "$LE_STATUS1" != 0 ]; then
+                    echo "Automated cert renewal: Restart Postfix failed."
+                fi
+
+        /etc/init.d/dovecot restart
+        LE_STATUS2=$?
+        if [ "$LE_STATUS2" != 0 ]; then
+            echo "Automated renewal: Restart Dovecot failed."
+        fi
+fi

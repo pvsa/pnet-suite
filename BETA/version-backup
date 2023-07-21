@@ -1,0 +1,47 @@
+#! /bin/bash
+# save version of konfig files via cron 
+# PvSA 25.4.2021
+
+# DEBUG
+#set -x
+
+# VARS
+PAL=root
+BCKTRGTDIR="/var/backups/config-version"
+DIRTOBCK="/etc /var/lib/portage /root/ /opt/"
+VERSIONS="5"
+DATE=$(date '+%Y%m%d')
+
+# check BCK-TAGRGET-DIR
+mkdir -p $BCKTRGTDIR
+
+
+# check for enough disk-space
+## check req. space 
+#reqSpace=100000000
+cd $BCKTRGTDIR
+NEWEST=$(ls -t | head -1)
+REQSPACE=$(stat --printf="%s" $NEWEST)
+
+# check if it's enough
+SPACE=`df "$BCKTRGTDIR" | awk 'END{print $4}'`
+if [[ $SPACE -le $REQSPACE ]]
+then
+    echo "not enough Space"
+    exit 1
+fi
+
+#compare archive with bck source
+#tar -dvf file.tar -C /path/to/dir
+
+
+
+# run backup
+tar -cpPj --warning='no-file-ignored' -f $(hostname)_$DATE.tar.bz2 $DIRTOBCK 
+#>/dev/null
+
+# delete older backups
+#find /directory/path/ -mindepth 1 -mtime +$VERSIONS -delete
+if [ $(ls -t $BCKTRGTDIR |grep -c "") -gt $VERSIONS ]; then
+	ls -t $BCKTRGTDIR | tail -n +$VERSIONS| xargs -d '\n' rm
+fi

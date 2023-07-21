@@ -1,0 +1,13 @@
+#! /bin/bash
+
+#VAR
+BCKDIR="/var/backups/openldap"
+DATE="$(date +'%Y%m%d-%H%M')"
+DAYS=14
+
+# Backup
+slapcat -n 1 -l $BCKDIR/"$(hostname)"-data_$DATE.ldif
+chmod 600 $BCKDIR/"$(hostname)"-data_$DATE.ldif
+
+# delte old
+find $BCKDIR -mindepth 1 -mtime +$DAYS -delete

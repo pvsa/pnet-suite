@@ -1,0 +1,19 @@
+##die groessten 9 Ordner in location
+# PvSA, 4.8.2011
+
+#DEBUG
+#set -x
+
+
+if [ "$1" = "" ]; then
+	echo "ducks [-l] [folder]"
+	echo " -l: long (all folders, not only the biggest)"
+	exit 0
+fi
+
+if [ "$1" = "-l" ]; then
+	du --max-depth=1 $2 |sort -nr |cut -f2 |xargs -d '\n' du -sh
+else
+	# xargs will be canceld -> /dev/null
+	du --max-depth=1 $1 |sort -nr |cut -f2 |xargs -d '\n' du -sh 2> /dev/null |head
+fi

@@ -1,0 +1,123 @@
+#! /bin/bash
+#deb
+#rh
+#gentoo
+
+##DEBUG
+#set -x
+
+## VAR
+RSCMAXSSD=0
+RSCMAXHDD=5
+
+DATE="`date '+%Y%m%d%H%M'`"
+TMPF="/tmp/disk-health_$DATE"
+DISKS="/tmp/disk-health_disks_$DATE"
+TMPDMESG="/tmp/disk-health_dmesg"
+TMPLASTRUN="/tmp/disk-health-lastrun"
+TMPDMESGCLEAN="/tmp/disk-health_dmesg-clean"
+
+function is_int() { return $(test "$@" -eq "$@" > /dev/null 2>&1); }
+
+## check for virtual system/disk
+
+## check for smartmontools installed
+if [ ! -e /usr/sbin/smartctl ]; then
+	echo "SMART Mon Tools not installed"
+	exit 1	
+fi
+
+
+# reduce dmesg to only new
+# perl -lane 'print if $F[1] ge "08:25:00" and $F[1] lt "08:36:00"'
+## https://unix.stackexchange.com/questions/120831/grep-for-range-of-numbers
+#UPTIME=$(cut -d " " -f 1 /proc/uptime|cut -d '.' -f 1)
+#UPTIME=600000
+dmesg |grep "\["> $TMPDMESG
+
+# wenn erster lauf dann nimm komplett dmesg, beim naechsten mal nur noch updates
+if [ -f $TMPLASTRUN ]; then
+	LASTRUN=$(cat $TMPLASTRUN)
+	while read i
+	do 
+	#echo $i
+	# Nur zeile beruecksichtigen die normal sind
+		time="`echo $i|cut -d '[' -f 2 |cut -d ']' -f 1 |cut -d '.' -f 1|tr -d ' '`"
+		time2=$(printf "%d\n" $time)
+	#	echo $time2
+	#	exit 1
+		if [ $time2 -gt $LASTRUN ]; then
+			echo "$i" >> $TMPDMESGCLEAN
+		fi
+	done < $TMPDMESG
+        cut -d " " -f 1 /proc/uptime|cut -d '.' -f 1 > $TMPLASTRUN
+else
+	cut -d " " -f 1 /proc/uptime|cut -d '.' -f 1 > $TMPLASTRUN
+	dmesg > $TMPDMESGCLEAN
+fi
+
+
+
+## check at reduced dmesg
+#cat /var/log/dmesg |grep -i -E "drbd|ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
+# lass es aus, wenn es keine news gibt
+if [ -f $TMPDMESGCLEAN ]; then
+cat $TMPDMESGCLEAN |grep -i -E "ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
+cat $TMPDMESGCLEAN |grep "sd\+[a-z]" |grep -i -E "fail|error|fault">> $TMPF
+cat $TMPDMESGCLEAN |grep "md\+[a-z]" |grep -i -E "fail|error|fault">> $TMPF
+cat $TMPDMESGCLEAN |grep "dm-\+[1-9]" |grep -i -E "fail|error|fault">> $TMPF
+
+fi
+
+## search useable disks
+/usr/sbin/smartctl --scan |cut -d " " -f 1 > $DISKS
+
+
+## check smart
+
+while read line
+do
+if [ "$line" = "#" ]; then
+	echo "Not a useable disk (smartctl) - Skipping !"
+else
+    name=$line
+	sline=$(echo $line |cut -d "/" -f 3)
+	DISKTYPE=$(cat /sys/block/$sline/queue/rotational)
+	smartctl -H -q errorsonly $line  >> $TMPF
+	# SSD
+	if [ $DISKTYPE = 0 ]; then
+	RSCMAX="$RSCMAXSSD"
+	RSC=$(smartctl -a $line |grep "Reallocated_Event_Count" | cut -d " " -f 32-33 |sed 's/ //g')	
+	# for mushkin it is event_count, for samsung its realloc_Sector
+	if [ "$RSC" = "" ]; then
+		RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
+	fi
+	## HDD
+	else
+	RSCMAX="$RSCMAXHDD"
+	RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
+	fi
+	## beides
+	## Leere oder unbrauchbaren Output abfangen
+	if $(is_int "${RSC}"); then
+	#if ["$RSC" = "" ]; then
+		if [ "$RSC" -gt "$RSCMAX" ]; then
+			echo "Warning: $line Reallocated Sectors/Events is greater than Limit ($RSCMAX): $RSC" >> $TMPF
+		fi
+	else
+		echo "An error with smartctl and disk $line occurred. Complet output of smartctl follows:"
+		echo "----------------------------------------------"
+		smartctl -a $line
+		echo "----------------------------------------------"
+
+	fi
+fi	
+done < $DISKS
+
+cat $TMPF
+
+
+rm $DISKS
+rm $TMPF
+rm $TMPDMESG
+rm -f $TMPDMESGCLEAN

@@ -1,0 +1,13 @@
+#!/bin/bash
+echo deadline > /sys/block/sda/queue/scheduler
+echo deadline > /sys/block/sdb/queue/scheduler
+echo deadline > /sys/block/sdc/queue/scheduler
+
+
+DISK="sdd"
+DISKROT=$(cat /sys/block/$DISK/queue/rotational)
+if [ $DISKROT = 0 ]; then
+	echo noop >	/sys/block/$DISK/queue/scheduler	
+else
+	echo deadline > /sys/block/$DISK/queue/scheduler
+fi

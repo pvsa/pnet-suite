@@ -1,0 +1,60 @@
+#!/bin/bash
+##DEBUG
+#set -x 
+
+
+
+PAL="root"
+TMPDIR="/tmp/ldap-sync-check"
+TMPDIR2="/tmp/ldap-sync-check/log"
+MASTERURI="ldaps://LDAPMASTERXXX"
+REPUSER="uid=replica,dc=pilarkto,dc=net"
+BASE="dc=pilarkto,dc=net"
+PASS="k98HJgfd/(?JKjhGh678"
+GREPOPT="-irE \"'@(#) $OpenLDAP:'|syncrep\""
+
+if [ "$MASTERURI" = "ldaps://LDAPMASTERXXX" ]; then
+	echo "Please set LDAP-Master Server - Exiting"
+	exit 1
+fi
+mkdir -p $TMPDIR
+chmod 700 -R $TMPDIR
+## Get local contextCSN
+slapcat -l $TMPDIR/ldif
+lcsn=$(cat $TMPDIR/ldif |grep contextCSN|cut -d " " -f 2|cut -c 1-14)
+
+# check if host is reachable
+if [ "$(ldapsearch -x -D "$REPUSER" -w "$PASS" -H $MASTERURI -LLL -x -s base -b "$BASE" -s one '(objectClass=simpleSecurityObject)' "$REPUSER" |grep -c "$REPUSER" )" -gt 0 ]; then
+
+## Get remote ContextCSN
+rcsn="$(ldapsearch -x -D "$REPUSER" -w "$PASS" -H $MASTERURI -LLL -x -s base -b "$BASE" contextCSN |grep contextCSN|cut -d " " -f 2|cut -c 1-14)"
+#echo "$rcsn"
+
+  if [ "$lcsn" != "$rcsn" ]; then
+	echo "CSN differs (Remote=$rcsn, Local=$lcsn), probably LDAP on host $(hostname) is out of sync. Restart Slapd-Server initiated" >  $TMPDIR2
+	/etc/init.d/slapd restart >> $TMPDIR2
+	echo "" >> $TMPDIR2
+	rcsn="$(ldapsearch -x -D "$REPUSER" -w "$PASS" -H $MASTERURI -LLL -x -s base -b "$BASE" contextCSN |grep contextCSN|cut -d " " -f 2|cut -c 1-14)" 
+	echo "SlapD restarted, now checking Remote CSN again:"  >> $TMPDIR2
+	echo "local CSN: $lcsn"  >> $TMPDIR2
+	echo "Remote CSN: $rcsn"  >> $TMPDIR2
+	echo "-------------------------------------------------"
+	echo "Syslog for debug purpose following (if exists in syslog):"
+	if [ -e /var/log/syslog ]; then
+		grep $GREPOPT /var/log/syslog  >> $TMPDIR2
+	elif [ -e /var/log/messages ]; then
+		grep $GREPOPT /var/log/messages  >> $TMPDIR2
+	elif [ -e /var/log/ldap.log ]; then
+		grep $GREPOPT /var/log/ldap.log 		>> $TMPDIR2
+	fi
+	echo "-------------------------------------------------"
+	cat $TMPDIR2 |mail -s "LDAP-Sync Check" $PAL
+  fi
+
+else
+	echo "Server with URI $MASTERURI not reachable !"
+	echo "exiting"
+fi
+
+rm -rf $TMPDIR
+

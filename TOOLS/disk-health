@@ -1,0 +1,82 @@
+#! /bin/bash
+#deb
+#rh
+#gentoo
+
+##DEBUG
+#set -x
+
+## VAR
+RSCMAXSSD=0
+RSCMAXHDD=5
+
+DATE="`date '+%Y%m%d%H%M'`"
+TMPF="/tmp/disk-health_$DATE"
+DISKS="/tmp/disk-health_disks_$DATE"
+
+function is_int() { return $(test "$@" -eq "$@" > /dev/null 2>&1); }
+
+## check for virtual system/disk
+
+## check for smartmontools installed
+if [ ! -e /usr/sbin/smartctl ]; then
+	echo "SMART Mon Tools not installed"
+	exit 1	
+fi
+
+## check at dmesg
+#cat /var/log/dmesg |grep -i -E "drbd|ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
+dmesg -T |grep -i -E "ata|scsi|ide" |grep -i -E "fail|error|fault">> $TMPF
+dmesg -T |grep "sd\+[a-z]" |grep -i -E "fail|error|fault">> $TMPF
+dmesg -T |grep "dd\+[a-z]" |grep -i -E "fail|error|fault">> $TMPF
+
+## search useable disks
+/usr/sbin/smartctl --scan |cut -d " " -f 1 > $DISKS
+
+
+## check smart
+
+while read line
+do
+if [ "$line" = "#" ]; then
+	echo "Not a useable disk (smartctl) - Skipping !"
+else
+    name=$line
+	sline=$(echo $line |cut -d "/" -f 3)
+	DISKTYPE=$(cat /sys/block/$sline/queue/rotational)
+	smartctl -H -q errorsonly $line  >> $TMPF
+	# SSD
+	if [ $DISKTYPE = 0 ]; then
+	RSCMAX="$RSCMAXSSD"
+	RSC=$(smartctl -a $line |grep "Reallocated_Event_Count" | cut -d " " -f 32-33 |sed 's/ //g')	
+	# for mushkin it is event_count, for samsung its realloc_Sector
+	if [ "$RSC" = "" ]; then
+		RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
+	fi
+	## HDD
+	else
+	RSCMAX="$RSCMAXHDD"
+	RSC=$(smartctl -a $line |grep "Reallocated_Sector_Ct" | cut -d " " -f 36)
+	fi
+	## beides
+	## Leere oder unbrauchbaren Output abfangen
+	if $(is_int "${RSC}"); then
+	#if ["$RSC" = "" ]; then
+		if [ "$RSC" -gt "$RSCMAX" ]; then
+			echo "Warning: $line Reallocated Sectors/Events is greater than Limit ($RSCMAX): $RSC" >> $TMPF
+		fi
+	else
+		echo "An error with smartctl and disk $line occurred. Complet output of smartctl follows:"
+		echo "----------------------------------------------"
+		smartctl -a $line
+		echo "----------------------------------------------"
+
+	fi
+fi	
+done < $DISKS
+
+cat $TMPF
+
+
+rm $DISKS
+rm $TMPF

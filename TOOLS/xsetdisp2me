@@ -1,0 +1,11 @@
+#! /bin/bash
+
+if [ `whoami` != "root" ]; then
+	DISP=`echo $DISPLAY|cut -d ":" -f 2|cut -d "." -f 1`
+	MITC=`xauth list|grep unix:$DISP`
+	sudo xauth add $MITC
+	echo "Display: $DISP fuer root's xauth eingetragen"
+else
+	echo "This script is not for root and needs sudo-rights"
+fi
+

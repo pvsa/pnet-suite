@@ -1,0 +1,25 @@
+#!/bin/sh
+
+##DEBUG
+#set -x
+
+DRBDERR="`cat /proc/drbd |grep cs: |grep -v 'UpToDate/UpToDate'`"
+
+if [ "$DRBDERR" != "" ]; then
+	echo "One or more drbd-disks has errors:" > /tmp/drbd-check.log
+	cat /proc/drbd |grep cs: |grep -v 'UpToDate/UpToDate'>> /tmp/drbd-check.log
+	echo "" >> /tmp/drbd-check.log
+	echo "The following DRBD-Device is affected:" >> /tmp/drbd-check.log
+	for i in $DRBDERR
+	do
+		ls -l /var/run/ganeti/instance-disks/ |grep /dev/drbd"`echo $i |cut -d ':' -f 1`" >> /tmp/drbd-check.log
+	done
+	echo "" >> /tmp/drbd-check.log
+
+	echo "================COMPLETE-LOG================" >> /tmp/drbd-check.log
+	dmesg -T |grep -i drbd >> /tmp/drbd-check.log
+	cat /tmp/drbd-check.log |mail -s "$(hostname): DRBD-Check Warning" paladin@pilarkto.net
+
+
+	rm /tmp/drbd-check.log
+fi

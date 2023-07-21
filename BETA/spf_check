@@ -1,0 +1,42 @@
+#! /bin/bash
+
+#set -x
+
+LOG="/var/log/maillog"
+#LOG="/tmp/maillog-20230208"
+
+TMPIN="/tmp/spf-check"
+TMPOUT="/tmp/spf-check-out"
+#grep policyd-spf $LOG |grep -iE 'Message rejected due to: SPF fail|error' |sed 's/;/ /g' | awk '{print $1,$2,$3,$20,$21}' > $TMPIN
+#grep policyd-spf $LOG |grep -iE 'fail|error' > $TMPIN
+journalctl -S "1 day ago" -t policyd-spf |grep -iE 'fail|error' > $TMPIN
+# |sed 's/;/ /g' | awk '{print $1,$2,$3,$20,$21}' > $TMPIN
+# check if input file empty
+if [ ! -s "${TMPIN}" ] ; then
+        echo "no fail or error spf record found today" |mail -s "$(hostname) - SPF-no-found ( $(date +%d.%m.%Y) )" paladin@pilarkto.net
+else
+
+# change IFS for awk operation
+IFS=$'\n'
+for line in $(cat $TMPIN); do
+        if echo $line |grep -iE 'Message rejected due to: SPF fail'>/dev/null; then
+                #echo "$line"
+                ip=$(echo "$line"|sed 's/;/ /g'  |awk '{print $21}' |cut -d '=' -f 2)
+                #echo IP: $ip
+                hostname=$(host $ip |awk '{print $5}')
+                #echo hostname: $hostname
+                message="$(echo $line|sed 's/;/ /g' | awk '{print $1,$2,$3,$20,$21}')"
+                echo "$message $hostname" >> $TMPOUT
+        else
+	echo "$line" >> $TMPOUT
+        fi
+done
+
+#grep -i 'error' $TMPIN  >> $TMPOUT
+
+cat $TMPOUT|mail -s "$(hostname) - SPF-fail ( $(date +%d.%m.%Y) )" paladin@pilarkto.net
+fi
+
+rm -f $TMPIN
+rm -f $TMPOUT
+
