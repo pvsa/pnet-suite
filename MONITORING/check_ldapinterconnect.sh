@@ -1,42 +1,73 @@
 #! /bin/bash
 ## PvSA 7.2.23, add parameter to manage count of check failures until error
-
+## PvSA 9.8.23 adjust split namp scan to dns, ping und port check
 #set -x
 
 LDAPCONFS="$1"
 ERRCOUNT=$2
-ZBXSRVINTERN=""
-ZBXSRVEXTERN=""
-ZBXKEY="LDAP-Interconnect"
-ZBXPORT=10051
-LDAPWHO=''
-LDAPWHOPW=''
+BLOCKFILE="/tmp/check_ldapinterconnect.block"
 WAIT=5
 
-## check for parameter set
-if [ "$1" = "" ]; then
-  echo "USAGE: check_ldapinterconnect.sh CONFIG-FILE-WITH-LDAPHOSTS [MAX-RETRY]"
-  echo "e.g. check_ldapinterconnect.sh /etc/postfix/ldap-user.cf 2"
-  exit 1
+
+# abort if block file exists
+if [ -e $BLOCKFILE ]; then
+	exit 1
 fi
 
-if [ "$ZBXSRVINTERN" = ""] || [ "$ZBXSRVEXTERN" = "" ] || [ "$LDAPWHO" = "" ] || [ "$LDAPWHOPW" = "" ]; then
-  echo "Not all needed variables set:"
-  echo "ZBXSRVINTERN = $ZBXSRVINTERN"
-  echo "ZBXSRVEXTERN = $ZBXSRVEXTERN"
-  echo "LDAPWHO = $LDAPWHO"
-  echo "LDAPWHOPW = $LDAPWHOPW"
-  echo "please check script file head. Exiting"
-  exit 1
+if [ -e check_ldapinterconnect_vars ]; then
+	source check_ldapinterconnect_vars
+else
+	echo "source file check_ldapinterconnect_vars not exists in $PWD"
+	echo check_ldapinterconnect_vars > $BLOCKFILE
+	exit 1
 fi
 
-#get ldap-server configured in LDAPCONFS
-#LDAPLIST=$(cat $LDAPCONFS| egrep '.*ldap[0-9]*\.p.*net' |egrep -v "^#.*" |egrep -v "^\/\/" |sed "s/\ /\n/g" |egrep '.*ldap[0-9]*\.p.*net' | sed 's/;//g'| sed "s/'//g" |sort |uniq)
+if [ $ZBXSRVINTERN == "" ] && [ $ZBXSRVEXTERN == "" ]; then
+        echo "at least one zbx host must be specified"
+        echo zbxhost > $BLOCKFILE
+        exit 1
+fi
+
+if [ $ZBXKEY == "" ] || [ ! $ZBXPORT ]; then
+        echo "zbx key and port needed"
+        echo zbxkeyport > $BLOCKFILE
+        exit 1
+fi
+
+if [ $LDAPWHO == "" ] || [ $LDAPWHOPW == "" ]; then
+        echo "ldap host and password must be specified"
+        echo ldap > $BLOCKFILE
+        exit 1
+fi
+
+
+
+# check if ldapwhoami exists
+if [ ! $(which ldapwhoami) ]; then
+	echo "programm ldapwhoami does not exist. Exiting and set block file $BLOCKFILE to avoid further execution"
+	echo ldapwhoami > $BLOCKFILE
+	exit 1
+fi
+# check if app host exists
+if [ ! $(which host) ]; then
+	echo "programm host does not exist. Exiting and set block file $BLOCKFILE to avoid further execution"
+	echo host > $BLOCKFILE
+	exit 1
+fi
+# check if app nc exists
+if [ ! $(which nc) ]; then
+	echo "programm nc (netcat) does not exist. Exiting and set block file $BLOCKFILE to avoid further execution"
+	echo nc > $BLOCKFILE
+	exit 1
+fi
+
+
+
+
 LDAPLIST=$(cat $LDAPCONFS| egrep '.*ldap[0-9]*\.p.*net' |egrep -v "^#.*" |egrep -v "^//" |sed "s/\ /\n/g" |egrep '.*ldap[0-9]*\.p.*net' | sed 's/;//g'| sed "s/'//g" |sort |uniq)
 
 for LDAPURL in $LDAPLIST; do
-        #echo "ldapurl: $LDAPURL"
-       LDAPPROTO="$(echo "$LDAPURL" | awk '{split($0,url,":"); print url[1]}')"
+        LDAPPROTO="$(echo "$LDAPURL" | awk '{split($0,url,":"); print url[1]}')"
         LDAPHOST="$(echo "$LDAPURL" | awk '{split($0,url,":"); print url[2]}'| sed "s/\///g" )"
 
         # run check with nmap
@@ -46,19 +77,15 @@ for LDAPURL in $LDAPLIST; do
                 LDAPPORT=389
         fi
 
-        #LDAPCHECK=$(nmap -sV -p$LDAPPORT $LDAPHOST)
-        #if echo "$LDAPCHECK" |grep "Anonymous bind OK" 1>/dev/null; then
-        #LDAPCHECK=$(nc -z $LDAPHOST $LDAPPORT)
-        #if nc -z $LDAPHOST $LDAPPORT ; then
-        # if ERRCOUNT not applicated, just do one
-	if ldapwhoami -H "$LDAPURL" -x -D "$LDAPWHO" -w "$LDAPWHOPW" 1>/dev/null; then
+
+	if ldapwhoami -H "$LDAPURL" -x -D "$LDAPWHO" -w "$LDAPWHOPW" 1>/dev/null 2>&1 ; then
                 CHECK=OK
         else
-		if [ "$ERRCOUNT" != "" ] && [ $ERRCOUNT -gt 1 ]; then
+		if [ $ERRCOUNT ] && [ $ERRCOUNT -gt 1 ]; then
 			x=1
-			while [ $x -lt $ERRCOUNT ];
+			while [ $x -lt $ERRCOUNT ]; 
 			do
-				if ldapwhoami -H "$LDAPURL" -x -D "$LDAPWHO" -w "$LDAPWHOPW" 1>/dev/null ; then
+				if ldapwhoami -H "$LDAPURL" -x -D "$LDAPWHO" -w "$LDAPWHOPW" 1>/dev/null 2>&1 ; then 
 					CHECK=OK
 					x=$ERRCOUNT
 				else
@@ -68,13 +95,28 @@ for LDAPURL in $LDAPLIST; do
 			done
 		else
 	                CHECK=ERROR
-        	        #echo "$LDAPCHECK"
-                	echo "$LDAPURLNORM Check failed"
-			nmap -p$LDAPPORT $LDAPHOST
+			# Check details DNS
+			if host $LDAPHOST  2>&1 > /dev/null ;then
+				DNSINFO="DNS=OK"
+			else
+				DNSINFO="DNS=NOK"
+			fi
+			# check details Ping
+			if ping -c 3 $LDAPHOST  2>&1 > /dev/null ;then
+				IPINFO="PING=OK"
+			else
+				IPONFO="PING=NOK"
+			fi
+			# check details port scan
+			if nc -z $LDAPHOST $LDAPPORT 2>&1 > /dev/null ;then
+				PINFO="PORT=OK"
+			else
+				PINFO="PORT=NOK"
+			fi
 		fi
         fi
 
-        RESULT+="$(echo $LDAPURL $CHECK); "
+        RESULT+="$(echo $LDAPURL $CHECK $DNSINFO $IPINFO $PINFO); "
         sleep $WAIT
 done
 
@@ -86,3 +128,4 @@ else
         zabbix_sender -z $ZBXSRVINTERN -p 10051 -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
 
 fi
+
