@@ -120,7 +120,14 @@ for LDAPURL in $LDAPLIST; do
         sleep $WAIT
 done
 
-#echo "$RESULT"
+# remove blockfile when script works until here
+rm -f $BLOCKFILE
+
+# print result to stdout with debug flag
+if [ "$3" == "-d" ]; then
+        echo "$RESULT"
+fi
+
 
 if nc -z "$ZBXSRVEXTERN" $ZBXPORT ; then
         zabbix_sender -z $ZBXSRVEXTERN -p 10051 -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
