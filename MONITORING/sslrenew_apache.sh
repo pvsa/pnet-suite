@@ -2,7 +2,7 @@
 
 #set -x
 
-#certbot renew -nvv --apache > /var/log/letsencrypt/renew.log 2>&1
+certbot renew -nvv --apache > /var/log/letsencrypt/renew.log 2>&1
 LE_STATUS=$?
 
 if [ -f /etc/init.d/httpd ]; then
