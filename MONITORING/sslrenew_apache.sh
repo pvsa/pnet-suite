@@ -1,13 +1,15 @@
 #!/bin/sh
 
-certbot renew -nvv --apache > /var/log/letsencrypt/renew.log 2>&1
+#set -x
+
+#certbot renew -nvv --apache > /var/log/letsencrypt/renew.log 2>&1
 LE_STATUS=$?
 
-if [ /etc/init.d/httpd ]; then
+if [ -f /etc/init.d/httpd ]; then
         /etc/init.d/httpd reload
-elif [ /etc/init.d/apache2 ]; then
+elif [ -f /etc/init.d/apache2 ]; then
         /etc/init.d/apache2 reload
-elif [ systemctl is-active httpd ]
+elif [ "$(systemctl is-active httpd)" = "active" ]; then
         systemctl reload httpd
 else
         echo "no Apache webserver service for reload found"
@@ -21,8 +23,12 @@ if [ "$LE_STATUS" != 0 ] ; then
 fi
 
 if [ $LE_STATUS2 != 0 ] ; then
-    echo Nginx Reload failed.
-    tail -n 20 /var/log/nginx/error_log
+    echo Apache Webserver Reload failed.
+        if [ -f /var/log/httpd/ssl_error_log ]; then
+            tail -n 20 /var/log/httpd/ssl_error_log
+        elif [ -f /var/log/apache/ssl_error_log ]; then
+            tail -n 20 /var/log/apache/ssl_error_log
+        fi
 fi
 
 if [ "$LE_STATUS" != 0 ] || [ $LE_STATUS2 != 0 ]; then
