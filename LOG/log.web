@@ -1,13 +1,11 @@
 #! /bin/bash
 
-if [ -e /var/log/apache2/error.log ];then
-	less +F /var/log/apache2/error.log
-elif [ -e /var/log/httpd/error_log ];then
-	less +F /var/log/httpd/error_log
-elif [ -e /var/log/apache2/error_log ];then
-        less +F /var/log/apache2/error_log
-elif [ $(ls /var/log/nginx/*error_log |grep -c "error_log") -gt 0 ];then
-        tail -f /var/log/nginx/*error_log
+if [ -e /var/log/apache2 ];then
+	tail -f /var/log/apache2/*error.log | grep -iE 'error|warn'
+elif [ -e /var/log/httpd/ ];then
+	tail -f /var/log/httpd/*error_log | grep -iE 'error|warn'
+elif [ -e /var/log/nginx/ ];then
+    tail -f /var/log/nginx/*error_log | grep -iE 'error|warn'
 
 else
 	echo "No Apache or NGINX Error-Logs found!"
