@@ -5,6 +5,7 @@
 ## - Warnen, wenn yum und apt installiert sind
 # PvSA, 30.11.2013 - gentoo support 
 # PvSA, 19.2.18 - optimize debian/ubuntu mail layout
+# PvSA 27.1.24 - add dnf
 
 ## DEBUG
 #set -x
@@ -19,11 +20,11 @@ LOG="/tmp/update-check.log"
 ## create tmp-file
 touch $LOG
 
-## Wenn apt und yum, dann warnungsmail senden
-if [ -e /etc/apt/sources.list ] && [ -e /etc/yum.conf ] && [ -e /etc/gentoo-release ]; then
-        echo "Warning: System hat apt und yum als Paketmanager installiert. Nicht klar, welcher verwendet werden soll" >> /tmp/update-check.log
+## if none of apt, emerge, dnf and yum, show warining
+if [ -e /etc/apt/sources.list ] && [ -e /etc/yum.conf ] && [ -e /etc/gentoo-release ] && [ -e /etc/dnf/dnf.conf ]; then
+        echo "Warning: System has no apt, yum, dnf and emerge as packet manager installed. cannot not perform check" >> /tmp/update-check.log
 
-# wenn nur apt
+# if apt
 elif [ -e /etc/apt/sources.list ]; then
         apt-get -qq update
 	if [ "`apt-get dist-upgrade -s | grep -i security`" != "" ]; then
@@ -44,17 +45,20 @@ elif [ -e /etc/apt/sources.list ]; then
                substr($4,1,length($4)-1)
      }' >> $LOG
 	echo "" >> $LOG
-	echo "paket infos in detail:" >> $LOG
+	echo "packet infos in detail:" >> $LOG
         echo "========================================================" >> $LOG
         aptitude search '~U' >> $LOG
         echo "--------------------------------------------------------" >> $LOG
         echo "For details of the status and falgs see:" >> $LOG
         echo " https://aptitude.alioth.debian.org/doc/en/ch02s02s02.html" >> $LOG
 	fi
-
-# wenn nur yum
+## yum and dnf - dnf preferred
+elif [ -e /etc/dnf/dnf.conf ];then
+        dnf -q check-update --secseverity Low >> $LOG
+#  yum
 elif [ -e /etc/yum.conf ];then
         yum -q check-update >> $LOG
+# Portage / emerge
 elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
 	#Update Portage
 	emerge --sync -q &> /dev/null
@@ -62,6 +66,7 @@ elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
 		echo "Portage Update failed - Trying again without quiet option"
 		emerge --sync
 	fi
+        # Update eix DB
         which eix-update 2>/dev/null 1>/dev/null
         if [ $? -eq 0 ]; then
            eix-update -q
@@ -78,11 +83,11 @@ elif [ -e /usr/sbin/emerge ] || [ /usr/bin/emerge ];then
         fi
 fi
 
-# Mail nur senden, wenn nicht leer
+# Send only mails if not empty
 if [ "`cat $LOG `" != "" ]; then
-        cat $LOG| mail -s "$SERVER: Ausstehende Updates" $PAL
+        cat $LOG| mail -s "$SERVER: Outstanding Updates" $PAL
 fi
 
-# log-file loeschen
+# delete log-file
 rm -f $LOG
 
