@@ -96,19 +96,19 @@ for LDAPURL in $LDAPLIST; do
 		else
 	                CHECK=ERROR
 			# Check details DNS
-			if host $LDAPHOST  2>&1 > /dev/null ;then
+			if host $LDAPHOST  > /dev/null 2>&1 ;then
 				DNSINFO="DNS=OK"
 			else
 				DNSINFO="DNS=NOK"
 			fi
 			# check details Ping
-			if ping -q -c 3 $LDAPHOST  2>&1 > /dev/null ;then
+			if ping -c3 $LDAPHOST > /dev/null 2>&1 ;then
 				IPINFO="PING=OK"
 			else
 				IPONFO="PING=NOK"
 			fi
 			# check details port scan
-			if nc -z $LDAPHOST $LDAPPORT 2>&1 > /dev/null ;then
+			if nc -z $LDAPHOST $LDAPPORT > /dev/null 2>&1 ;then
 				PINFO="PORT=OK"
 			else
 				PINFO="PORT=NOK"
