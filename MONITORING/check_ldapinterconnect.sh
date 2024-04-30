@@ -102,7 +102,7 @@ for LDAPURL in $LDAPLIST; do
 				DNSINFO="DNS=NOK"
 			fi
 			# check details Ping
-			if ping -c 3 $LDAPHOST  2>&1 > /dev/null ;then
+			if ping -q -c 3 $LDAPHOST  2>&1 > /dev/null ;then
 				IPINFO="PING=OK"
 			else
 				IPONFO="PING=NOK"
