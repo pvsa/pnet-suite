@@ -1,7 +1,12 @@
 #! /bin/bash
 
 if [ -e /var/log/apache2 ];then
-	tail -f /var/log/apache2/*error.log | grep -iE 'error|warn'
+	if [ -e /var/log/apache2/*error.log ]; then
+		tail -f /var/log/apache2/*error.log | grep -iE 'error|warn'
+	fi
+	if [ -e /var/log/apache2/*error_log ]; then
+		tail -f /var/log/apache2/*error_log | grep -iE 'error|warn'
+	fi
 elif [ -e /var/log/httpd/ ];then
 	tail -f /var/log/httpd/*error_log | grep -iE 'error|warn'
 elif [ -e /var/log/nginx/ ];then
