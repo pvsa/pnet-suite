@@ -1,11 +1,11 @@
 #! /bin/bash
 
 if [ -e /var/log/apache2 ];then
-	if [ -e /var/log/apache2/*error.log ]; then
-		tail -f /var/log/apache2/*error.log | grep -iE 'error|warn'
+	if [ find /var/log/apache2/ -name *error.log 2>&1 >/dev/null ]; then
+		tail -f /var/log/apache2/*error.log
 	fi
-	if [ -e /var/log/apache2/*error_log ]; then
-		tail -f /var/log/apache2/*error_log | grep -iE 'error|warn'
+	if [ find /var/log/apache2/ -name *error_log 2>&1 >/dev/null ]; then
+		tail -f /var/log/apache2/*error_log
 	fi
 elif [ -e /var/log/httpd/ ];then
 	tail -f /var/log/httpd/*error_log | grep -iE 'error|warn'
