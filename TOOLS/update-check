@@ -6,6 +6,7 @@
 # PvSA, 30.11.2013 - gentoo support 
 # PvSA, 19.2.18 - optimize debian/ubuntu mail layout
 # PvSA 27.1.24 - add dnf
+# PvSA 30.6.24 - add dnf sec category handling
 
 ## DEBUG
 #set -x
@@ -54,7 +55,25 @@ elif [ -e /etc/apt/sources.list ]; then
 	fi
 ## yum and dnf - dnf preferred
 elif [ -e /etc/dnf/dnf.conf ];then
-        dnf -q check-update --secseverity Low >> $LOG
+	secres=0
+	secsevlst='Low Moderate Important Critical'
+	for secsev in $secsevlst; do 
+        	chkres="$(dnf -q check-update --secseverity $secsev)" 
+		if [ "$chkres" != "" ]; then
+			echo "Security level - $secsev:" >> $LOG
+			echo "------------------------------" >> $LOG
+			echo "$chkres" 	>> $LOG
+			echo "" >> $LOG
+			((secres++))
+			unset chkres
+		fi
+	done
+	if [ $secres -gt 0 ]; then
+		echo "" >> $LOG
+		echo "These non-security relevant updates are also available :" >> $LOG
+		dnf -q check-update >> $LOG
+	fi 
+        
 #  yum
 elif [ -e /etc/yum.conf ];then
         yum -q check-update >> $LOG
