@@ -104,7 +104,7 @@ fi
 
 # Send only mails if not empty
 if [ "`cat $LOG `" != "" ]; then
-        cat $LOG| mail -s "$SERVER: Outstanding Updates" $PAL
+        cat $LOG| mail -s "$SERVER: Pending Updates" $PAL
 fi
 
 # delete log-file
