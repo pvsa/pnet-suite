@@ -11,16 +11,19 @@ if [ -e /var/log/dovecot.log ];then
 		tail -f /var/log/mail.log /var/log/dovecot.log
 	fi
 
-# postfix only
+# MTA only
 else
        if [ -e /var/log/maillog ];then
                 # rh, only postfix 
                 less +F /var/log/maillog
-	else
+	elif [ -e /var/log/mail.log ]; then
                 # deb, postfix only
                 less +F /var/log/mail.log
-        fi
+	elif [ -e /var/log/nullmailer/nullmailer.log ]; then
+		less +F /var/log/nullmailer/nullmailer.log
+	fi
 
 fi
+
 
 
