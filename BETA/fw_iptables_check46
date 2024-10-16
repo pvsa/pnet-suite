@@ -125,6 +125,8 @@ zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOLINBYTE" -
 rm -f $IPTOUT
 
 if [ "$1" == "-i" ]; then
+    echo "Using $iptcmd":
+    echo "-----------------------"
     echo "==IPTables State=="
     cat $STATEFILE
     echo ""
