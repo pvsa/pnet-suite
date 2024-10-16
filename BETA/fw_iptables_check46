@@ -2,7 +2,7 @@
 ## sceipt checking basic iptables principals
 ## PvSA 15.9.24
 
-set -x
+#set -x
 
 STATEFILE="/tmp/fw_iptables_status"
 POLFILE="/tmp/fw_iptables_policies"
@@ -49,7 +49,7 @@ for iptcmd in ${iptcmdlst[@]}; do
     fi
 
     # when this point is reached - state is ok
-    echo "OK" >>$STATEFILE
+    echo "$iptcmd: OK" >>$STATEFILE
 
 
     # check INPUT policies
@@ -108,13 +108,13 @@ else
 fi
 
 # push iptables status
-zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE)" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
 
 # push iptbales policies
 zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push min rules
-zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE)" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push input usage
 zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
