@@ -18,10 +18,10 @@ else
     exit 1
 fi
 
-if $(ip -6 a | grep inet6 | grep -v "::1/128" | grep -v "fe80::"); then
-    iptcmd="iptables ip6tables"
+if [ $(ip -6 a | grep "inet6" | grep -v "::1/128" | grep -v "fe80::" |grep -c "") > 0 ]; then
+    iptcmd=("iptables" "ip6tables")
 else
-    iptcmd="iptables"
+    iptcmd=("iptables")
 fi
 
 #echo "OK" > $STATEFILE
