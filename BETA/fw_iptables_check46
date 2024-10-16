@@ -1,0 +1,145 @@
+#! /bin/bash
+## sceipt checking basic iptables principals
+## PvSA 15.9.24
+
+#set -x
+
+STATEFILE="/tmp/fw_iptables_status"
+POLFILE="/tmp/fw_iptables_policies"
+POLUSEFILE="/tmp/fw_iptables_poluse"
+RULEFILE="/tmp/fw_iptables_rules"
+IPTOUT="/tmp/fw_iptables_output"
+SRCFILE="/root/fw_iptables_check_vars"
+
+if [ -e $SRCFILE ]; then
+    source $SRCFILE
+else
+    echo "source-file $SRCFILE not exists"
+    exit 1
+fi
+
+if $(ip -6 a | grep inet6 | grep -v "::1/128" | grep -v "fe80::"); then
+    iptcmd="iptables ip6tables"
+else
+    iptcmd="iptables"
+fi
+
+#echo "OK" > $STATEFILE
+touch $STATEFILE
+chmod 644 $STATEFILE
+
+touch $POLFILE
+chmod 644 $POLFILE
+
+touch $RULEFILE
+chmod 644 $RULEFILE
+
+for i in $iptcmd; do
+
+    #check for iptables bin
+    if ! $(which $iptcmd >/dev/null); then
+        echo "ERROR: $iptcmd bin does not exists" >>$STATEFILE
+        exit 1
+    fi
+
+    $iptcmd -L -n -v -x >$IPTOUT
+    if [ $? -ne 0 ] || [ ! -s $IPTOUT ]; then
+        echo "ERROR: $iptcmd chains not loadable" >>$STATEFILE
+        exit 1
+    fi
+
+    # when this point is reached - state is ok
+    echo "OK" >>$STATEFILE
+
+
+    # check INPUT policies
+    POLIN="$(cat $IPTOUT | grep "policy" | grep -i "Chain INPUT")"
+    # check default policy
+    if $(echo $POLIN | grep "$PIN" >/dev/null); then
+        echo "$iptcmd - OK: INPUT = $PIN" >>$POLFILE
+    else
+        echo "$iptcmd - ERROR: INPUT-Chain <> $PIN" >>$POLFILE
+    fi
+    # note usage values
+    echo "$iptcmd - IN: $(echo $POLIN | awk '{ print $5,$7 }')" >>$POLUSEFILE
+    
+    
+    # check OUTPUT policies
+    POLOUT="$(cat $IPTOUT | grep "policy" | grep -i "Chain OUTPUT")"
+
+    if $(echo $POLOUT | grep "$POUT" >/dev/null); then
+        echo "$iptcmd - OK: OUTPUT = $POUT" >>$POLFILE
+    else
+        echo "$iptcmd - ERROR: OUTPUT <> $POUT" >>$POLFILE
+
+    fi
+    # note usage values
+    echo "$iptcmd - OUT: $(echo $POLOUT | awk '{ print $5,$7 }')" >>$POLUSEFILE
+
+
+    # check FORWARD policies
+    POLFOR="$(cat $IPTOUT | grep "policy" | grep -i "Chain FORWARD")"
+    if $(echo $POLFOR | grep "$PFOR" >/dev/null); then
+        echo "$iptcmd - OK: FORWARD = $PFOR" >>$POLFILE
+    else
+        echo "$iptcmd - ERROR: FORWARD <> $PFOR" >>$POLFILE
+
+    fi
+    # note usage values
+    echo "$iptcmd - FORWARD: $(echo $POLFOR | awk '{ print $5,$7 }')" >>$POLUSEFILE
+
+
+    # check SSH rule - min config set
+    RULECHECK=$(cat $IPTOUT | grep -c "$IPTRULEPATTERN")
+    if [ $RULECHECK -ge 1 ]; then
+        echo "$iptcmd - OK: found $RULECHECK defined rule(s)" >>$RULEFILE
+    else
+        echo "$iptcmd - ERROR: No defined rule(s) for $IPTRULEPATTERN found" >>$RULEFILE
+
+    fi
+
+done
+
+# select zabbix server ext/int
+if nc -z "$ZBXSRVINTERN" $ZBXPORT; then
+    ZBXSRV="$ZBXSRVINTERN"
+else
+    ZBXSRV="$ZBXSRVEXTERN"
+fi
+
+# push iptables status
+zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE)" >/dev/null
+
+# push iptbales policies
+zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
+
+# push min rules
+zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE)" >/dev/null
+
+# push input usage
+zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOLINBYTE" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $3}')" >/dev/null
+
+#
+#
+rm -f $IPTOUT
+
+if [ "$1" == "-i" ]; then
+    echo "==IPTables State=="
+    cat $STATEFILE
+    echo ""
+    echo "==IPTables Policies=="
+    cat $POLFILE
+    echo ""
+    echo "==IPTables Rules=="
+    cat $RULEFILE
+    echo "Rule pattern was: $IPTRULEPATTERN"
+    echo ""
+    echo "==IPTables Usage (pkg,byte)=="
+    cat $POLUSEFILE
+fi
+
+rm -f $STATEFILE
+rm -f $POLFILE
+rm -f $RULEFILE
+rm -f $POLUSEFILE
