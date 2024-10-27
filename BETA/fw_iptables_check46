@@ -101,7 +101,7 @@ for iptcmd in ${iptcmdlst[@]}; do
 done
 
 # select zabbix server ext/int
-if nc -z "$ZBXSRVINTERN" $ZBXPORT; then
+if nc -z "$ZBXSRVINTERN" $ZBXPORT >/dev/null 2>&1; then
     ZBXSRV="$ZBXSRVINTERN"
 else
     ZBXSRV="$ZBXSRVEXTERN"
