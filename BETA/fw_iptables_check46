@@ -18,7 +18,7 @@ else
     exit 1
 fi
 
-if [ $(ip -6 a | grep "inet6" | grep -v "::1/128" | grep -v "fe80::" |grep -c "") > 0 ]; then
+if [ $(ip -6 a | grep "inet6" | grep -v "::1/128" | grep -v "fe80::" |grep -c "") -gt 0 ]; then
     iptcmdlst=("iptables" "ip6tables")
 else
     iptcmdlst=("iptables")
