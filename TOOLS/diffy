@@ -1,0 +1,27 @@
+#! /bin/bash
+## Script for two column diff without common lines and commented ones
+## PvSA 25.11.2024
+#set -x
+
+DATE="$(date '+%s')"
+
+FILE1=/tmp/diffy_"$(whoami)"_$DATE.1
+FILE2=/tmp/diffy_"$(whoami)"_$DATE.2
+
+
+if [ "$1" == "" ] || [ "$2" == "" ]; then
+    echo "must be two files given to compare - exiting"
+    exit 1
+fi
+
+
+
+grep -E -v "^#|^$|^/" $1 > $FILE1 
+grep -E -v "^#|^$|^/" $2 > $FILE2
+
+echo "$1   <======>     $2 "
+echo "----------------------------------------"
+diff -y --suppress-common-lines $FILE1 $FILE2
+
+rm $FILE1
+rm $FILE2
