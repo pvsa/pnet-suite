@@ -10,6 +10,7 @@ POLUSEFILE="/tmp/fw_iptables_poluse"
 RULEFILE="/tmp/fw_iptables_rules"
 IPTOUT="/tmp/fw_iptables_output"
 SRCFILE="/root/fw_iptables_check_vars"
+ZBXHNAME="$(grep -E '^Hostname=' /etc/zabbix/zabbix_agent*.conf |head -1 |cut -d '=' -f 2)"
 
 if [ -e $SRCFILE ]; then
     source $SRCFILE
@@ -108,17 +109,17 @@ else
 fi
 
 # push iptables status
-zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
 
 # push iptbales policies
-zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push min rules
-zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE | sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push input usage
-zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
-zabbix_sender -z $ZBXSRV -p 10051 -s "$(hostname -s)" -k "$ZBXKEYIPTPOLINBYTE" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $3}')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINBYTE" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $3}')" >/dev/null
 
 #
 #
