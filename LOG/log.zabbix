@@ -1,0 +1,8 @@
+#! /bin/bash
+## find latest zabbix log file and open if with less
+## PvSA 3.3.25
+
+find /var/log/ -mmin -10 -type f |grep zabbix |head -1 || echo "no zabbix log file found"
+ZBXLOG="$(find /var/log/ -mmin -10 -type f |grep zabbix |head -1)"
+less +F $ZBXLOG
+
