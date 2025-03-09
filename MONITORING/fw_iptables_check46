@@ -1,6 +1,7 @@
 #! /bin/bash
 ## sceipt checking basic iptables principals
-## PvSA 15.9.24
+## PvSA 15.9.24 - init
+## PvSA 9.3.25 - add psk support, zbx_sender check
 
 #set -x
 
@@ -10,7 +11,28 @@ POLUSEFILE="/tmp/fw_iptables_poluse"
 RULEFILE="/tmp/fw_iptables_rules"
 IPTOUT="/tmp/fw_iptables_output"
 SRCFILE="/root/fw_iptables_check_vars"
-ZBXHNAME="$(grep -E '^Hostname=' /etc/zabbix/zabbix_agent*.conf |head -1 |cut -d '=' -f 2)"
+# check for zabbix_sender
+if ! $(which zabbix_sender >/dev/null); then
+	echo "program zabbix_sender not available"
+	exit 1
+fi
+
+# find zabbix-agent version
+if $(pgrep -u zabbix -l |grep agent2 >/dev/null); then
+	ZBXAGENT="zabbix_agent2"
+else
+	ZBXAGENT="zabbix_agentd"
+fi
+ZBXHNAME="$(grep -E '^Hostname=' /etc/zabbix/$ZBXAGENT.conf |head -1 |cut -d '=' -f 2)"
+
+# PSK check used
+if $(grep -E '^TLSConnect=psk' /etc/zabbix/$ZBXAGENT.conf >/dev/null); then
+	PSKID="$(grep -E '^TLSPSKIdentity=' /etc/zabbix/$ZBXAGENT.conf |cut -d '=' -f 2)"
+	PSKFILE="$(grep -E '^TLSPSKFile=' /etc/zabbix/$ZBXAGENT.conf| cut -d '=' -f 2)"
+	PSKCMD="--tls-connect psk --tls-psk-identity "$PSKID" --tls-psk-file $PSKFILE"
+else
+	PSKCMD=""
+fi
 
 if [ -e $SRCFILE ]; then
     source $SRCFILE
@@ -109,17 +131,17 @@ else
 fi
 
 # push iptables status
-zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
 
 # push iptbales policies
-zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push min rules
-zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE | sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push input usage
-zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
-zabbix_sender -z $ZBXSRV -p 10051 -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINBYTE" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $3}')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
+zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINBYTE" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $3}')" >/dev/null
 
 #
 #
