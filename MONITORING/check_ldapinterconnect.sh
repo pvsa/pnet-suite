@@ -1,6 +1,8 @@
 #! /bin/bash
 ## PvSA 7.2.23, add parameter to manage count of check failures until error
 ## PvSA 9.8.23 adjust split namp scan to dns, ping und port check
+## PvSA 9.3.25 add zabbix_sender check and PSK option
+
 #set -x
 
 LDAPCONFS="$1"
@@ -59,6 +61,29 @@ if [ ! $(which nc) ]; then
 	echo "programm nc (netcat) does not exist. Exiting and set block file $BLOCKFILE to avoid further execution"
 	echo nc > $BLOCKFILE
 	exit 1
+fi
+
+# check for zabbix_sender
+if ! $(which zabbix_sender >/dev/null); then
+        echo "program zabbix_sender not available"
+        echo "program zabbix_sender not available" > $BLOCKFILE
+        exit 1
+fi
+
+# find zabbix-agent version
+if $(pgrep -u zabbix -l |grep agent2 >/dev/null); then
+        ZBXAGENT="zabbix_agent2"
+else
+        ZBXAGENT="zabbix_agentd"
+fi
+
+# PSK check used
+if $(grep -E '^TLSConnect=psk' /etc/zabbix/$ZBXAGENT.conf >/dev/null); then
+        PSKID="$(grep -E '^TLSPSKIdentity=' /etc/zabbix/$ZBXAGENT.conf |cut -d '=' -f 2)"
+        PSKFILE="$(grep -E '^TLSPSKFile=' /etc/zabbix/$ZBXAGENT.conf| cut -d '=' -f 2)"
+        PSKCMD="--tls-connect psk --tls-psk-identity "$PSKID" --tls-psk-file $PSKFILE"
+else
+        PSKCMD=""
 fi
 
 
@@ -130,9 +155,9 @@ fi
 
 
 if nc -z "$ZBXSRVEXTERN" $ZBXPORT ; then
-        zabbix_sender -z $ZBXSRVEXTERN -p 10051 -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
+        zabbix_sender -z $ZBXSRVEXTERN -p 10051 $PSKCMD -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
 else
-        zabbix_sender -z $ZBXSRVINTERN -p 10051 -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
+        zabbix_sender -z $ZBXSRVINTERN -p 10051 $PSKCMD -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
 
 fi
 
