@@ -1,7 +1,9 @@
 #! /bin/bash
 ## PvSA 7.2.23, add parameter to manage count of check failures until error
 ## PvSA 9.8.23 adjust split namp scan to dns, ping und port check
-## PvSA 9.3.25 add zabbix_sender check and PSK option
+## PvSA 9.3.25 add zabbix_sender check and determine used zabbix-config
+## PvSA 16.3.25 use zabbix-config for sender
+
 
 #set -x
 
@@ -77,18 +79,8 @@ else
         ZBXAGENT="zabbix_agentd"
 fi
 
-# PSK check used
-if $(grep -E '^TLSConnect=psk' /etc/zabbix/$ZBXAGENT.conf >/dev/null); then
-        PSKID="$(grep -E '^TLSPSKIdentity=' /etc/zabbix/$ZBXAGENT.conf |cut -d '=' -f 2)"
-        PSKFILE="$(grep -E '^TLSPSKFile=' /etc/zabbix/$ZBXAGENT.conf| cut -d '=' -f 2)"
-        PSKCMD="--tls-connect psk --tls-psk-identity "$PSKID" --tls-psk-file $PSKFILE"
-else
-        PSKCMD=""
-fi
 
-
-
-
+# get list of ldap server used on server config
 LDAPLIST=$(cat $LDAPCONFS| egrep '.*ldap[0-9]*\.p.*net' |egrep -v "^#.*" |egrep -v "^//" |sed "s/\ /\n/g" |egrep '.*ldap[0-9]*\.p.*net' | sed 's/;//g'| sed "s/'//g" |sort |uniq)
 
 for LDAPURL in $LDAPLIST; do
@@ -153,11 +145,8 @@ if [ "$3" == "-d" ]; then
         echo "$RESULT"
 fi
 
+# send result to zabbix server with parameters from zabbix-agent config
+zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEY" -o "$RESULT" >/dev/null
 
-if nc -z "$ZBXSRVEXTERN" $ZBXPORT ; then
-        zabbix_sender -z $ZBXSRVEXTERN -p 10051 $PSKCMD -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
-else
-        zabbix_sender -z $ZBXSRVINTERN -p 10051 $PSKCMD -s "$(hostname -s)" -k "$ZBXKEY" -o "$RESULT" >/dev/null
 
-fi
 

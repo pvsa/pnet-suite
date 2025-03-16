@@ -1,7 +1,8 @@
 #! /bin/bash
 ## sceipt checking basic iptables principals
 ## PvSA 15.9.24 - init
-## PvSA 9.3.25 - add psk support, zbx_sender check
+## PvSA 9.3.25 - zbx_sender check, determine used agent-version
+## PvSA - used zbx config for sender parameter
 
 #set -x
 
@@ -22,16 +23,6 @@ if $(pgrep -u zabbix -l |grep agent2 >/dev/null); then
 	ZBXAGENT="zabbix_agent2"
 else
 	ZBXAGENT="zabbix_agentd"
-fi
-ZBXHNAME="$(grep -E '^Hostname=' /etc/zabbix/$ZBXAGENT.conf |head -1 |cut -d '=' -f 2)"
-
-# PSK check used
-if $(grep -E '^TLSConnect=psk' /etc/zabbix/$ZBXAGENT.conf >/dev/null); then
-	PSKID="$(grep -E '^TLSPSKIdentity=' /etc/zabbix/$ZBXAGENT.conf |cut -d '=' -f 2)"
-	PSKFILE="$(grep -E '^TLSPSKFile=' /etc/zabbix/$ZBXAGENT.conf| cut -d '=' -f 2)"
-	PSKCMD="--tls-connect psk --tls-psk-identity "$PSKID" --tls-psk-file $PSKFILE"
-else
-	PSKCMD=""
 fi
 
 if [ -e $SRCFILE ]; then
@@ -123,25 +114,19 @@ for iptcmd in ${iptcmdlst[@]}; do
 
 done
 
-# select zabbix server ext/int
-if nc -z "$ZBXSRVINTERN" $ZBXPORT >/dev/null 2>&1; then
-    ZBXSRV="$ZBXSRVINTERN"
-else
-    ZBXSRV="$ZBXSRVEXTERN"
-fi
-
 # push iptables status
-zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
 
 # push iptbales policies
-zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEYIPTPOL" -o "$(cat $POLFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push min rules
-zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE | sed -z 's/\n/; /g')" >/dev/null
+zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEYIPTRULE" -o "$(cat $RULEFILE | sed -z 's/\n/; /g')" >/dev/null
 
 # push input usage
-zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
-zabbix_sender -z $ZBXSRV -p 10051 $PSKCMD -s "$ZBXHNAME" -k "$ZBXKEYIPTPOLINBYTE" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $3}')" >/dev/null
+zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEYIPTPOLINPKG" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $2}')" >/dev/null
+zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEYIPTPOLINBYTE" -o "$(cat $POLUSEFILE | grep 'IN:' | awk '{print $3}')" >/dev/null
+
 
 #
 #
