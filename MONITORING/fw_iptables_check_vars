@@ -1,0 +1,12 @@
+PIN=DROP
+POUT=ACCEPT
+PFOR=DROP
+ZBXKEYIPTSTATE="iptables-status"
+ZBXKEYIPTPOL="iptables-policies"
+ZBXKEYIPTRULE="iptables-rules"
+IPTRULEPATTERN=""
+ZBXKEYIPTPOLINPKG="iptables-in-usage-pkg"
+ZBXKEYIPTPOLINBYTE="iptables-in-usage-byte"
+ZBXSRVEXTERN="zabbix.example.com"
+ZBXSRVINTERN="zabbix.local"
+ZBXPORT=10051
