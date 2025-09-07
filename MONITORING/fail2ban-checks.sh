@@ -70,10 +70,10 @@ for jail in $jails; do
     fi
 done
 
-echo "System - Client: $clientstatus, Server: $serverstatus"
-echo "Jails - ${statusline%, }"
-echo "Currently failed: $failed_total"
-echo "Currently banned: $banned_total"
+#echo "System - Client: $clientstatus, Server: $serverstatus"
+#echo "Jails - ${statusline%, }"
+#echo "Currently failed: $failed_total"
+#echo "Currently banned: $banned_total"
 
 #f2bsys
 # push f2b-client installed + ping/pong
