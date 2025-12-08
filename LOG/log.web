@@ -2,16 +2,32 @@
 
 if [ -e /var/log/apache2 ];then
         if [ "$(find /var/log/apache2/ -name *error.log 2> /dev/null)" != "" ] ; then
-                tail -f /var/log/apache2/*error.log
+                tail -n 10 -f /var/log/apache2/*error.log
         fi
         if [ "$(find /var/log/apache2/ -name *error_log 2> /dev/null)" != "" ] ; then
-                tail -f /var/log/apache2/*error_log
+                tail -n 10 -f /var/log/apache2/*error_log
         fi
 elif [ -e /var/log/httpd/ ];then
-	tail -f /var/log/httpd/*error_log | grep -iE 'error|warn'
+	tail -n 10 -f /var/log/httpd/*error_log | awk 'BEGIN{IGNORECASE=1}
+       {
+           gsub(/error/, "\033[31m&\033[0m");
+           gsub(/warn/,  "\033[33m&\033[0m");
+           print
+       }'
+
 elif [ -e /var/log/nginx/ ];then
-    tail -f /var/log/nginx/*error_log | grep -iE 'error|warn'
+    tail -n 10 -f /var/log/nginx/*error_log | awk 'BEGIN{IGNORECASE=1}
+       {
+           gsub(/error/, "\033[31m&\033[0m");
+           gsub(/warn/,  "\033[33m&\033[0m");
+           print
+       }'
 
 else
-	echo "No Apache or NGINX Error-Logs found!"
+	echo "No Logs found under: 
+	- /var/log/apache2/*error.log
+	- /var/log/apache2/*error_log
+	- /var/log/httpd/*error_log
+	- /var/log/nginx/*error_log
+"
 fi
