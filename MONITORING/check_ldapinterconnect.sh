@@ -73,7 +73,7 @@ if ! $(which zabbix_sender >/dev/null); then
 fi
 
 # find zabbix-agent version
-ZBXAGENTVER="$(pgrep -u zabbix -l zabbix_agent|cut -d ' ' -f 2 >/dev/null)"
+ZBXAGENTVER="$(pgrep -u zabbix -l zabbix_agent|cut -d ' ' -f 2)"
 if [ -n "$ZBXAGENTVER" ]; then
         ZBXAGENT="$ZBXAGENTVER"
 else
