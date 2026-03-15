@@ -73,10 +73,11 @@ if ! $(which zabbix_sender >/dev/null); then
 fi
 
 # find zabbix-agent version
-if $(pgrep -u zabbix -l |grep agent2 >/dev/null); then
-        ZBXAGENT="zabbix_agent2"
+ZBXAGENTVER="$(pgrep -u zabbix -l zabbix_agent|cut -d ' ' -f 2 >/dev/null)"
+if [ -n "$ZBXAGENTVER" ]; then
+        ZBXAGENT="$ZBXAGENTVER"
 else
-        ZBXAGENT="zabbix_agentd"
+        echo "No zabbix agent(d|2) service running"
 fi
 
 
