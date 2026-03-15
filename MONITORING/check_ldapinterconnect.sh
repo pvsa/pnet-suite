@@ -78,6 +78,8 @@ if [ -n "$ZBXAGENTVER" ]; then
         ZBXAGENT="$ZBXAGENTVER"
 else
         echo "No zabbix agent(d|2) service running"
+		echo zabbix_agent-down > $BLOCKFILE
+		exit 1
 fi
 
 
