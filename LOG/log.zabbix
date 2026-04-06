@@ -2,7 +2,9 @@
 ## find latest zabbix log file and open if with less
 ## PvSA 3.3.25
 
-ZBXLOG="$(find /var/log/ -mmin -59 -type f |grep zabbix |head -1)"
+DMIN="-360"
+
+ZBXLOG="$(find /var/log/ -mmin $DMIN -type f |grep zabbix |head -1)"
 #echo $ZBXLOG
 
 if [[ -z $ZBXLOG ]]; then
