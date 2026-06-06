@@ -53,12 +53,16 @@ for iptcmd in ${iptcmdlst[@]}; do
     #check for iptables bin
     if ! $(which $iptcmd >/dev/null); then
         echo "ERROR: $iptcmd bin does not exists" >>$STATEFILE
+		# push iptables status
+		zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
         exit 1
     fi
 
     $iptcmd -L -n -v -x >$IPTOUT
     if [ $? -ne 0 ] || [ ! -s $IPTOUT ]; then
         echo "ERROR: $iptcmd chains not loadable" >>$STATEFILE
+		# push iptables status
+		zabbix_sender -c /etc/zabbix/$ZBXAGENT.conf -k "$ZBXKEYIPTSTATE" -o "$(cat $STATEFILE| sed -z 's/\n/; /g')" >/dev/null
         exit 1
     fi
 
