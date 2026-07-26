@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<zabbix_export>
+    <version>6.0</version>
+    <date>2026-06-06T00:00:00Z</date>
+    <groups>
+        <group>
+            <uuid>0aac1f4361354eeb8fbf792c89be23b9</uuid>
+            <name>Templates/Network</name>
+        </group>
+    </groups>
+    <templates>
+        <template>
+            <uuid>07011a6b52c94552835dcb1a9d13c14b</uuid>
+            <template>Template DNS Resolution Checks</template>
+            <name>Template DNS Resolution Checks</name>
+            <description>DNS integrity and performance checks via LLD. Discovery 1 injects host IP/DNS into {#EXP_IP}/{#EXP_DNS} for forward (A) integrity checks (Google, Cloudflare, system resolver). Discovery 2 expands {$DNS.PERF.DOMAINS} into per-domain net.dns.perf items, alerting above {$DNS.PERF.THRESHOLD} s or on resolver failure. A calculated item averages the last 5 perf values across all domains. Requires Zabbix Agent 2 (7.0+ for net.dns.perf).</description>
+            <groups>
+                <group>
+                    <name>Templates/Network</name>
+                </group>
+            </groups>
+            <items>
+                <item>
+                    <uuid>516dd2a6b3af45189c08f4de2cc1e055</uuid>
+                    <name>DNS resolution time: average of per-domain 30-min minimums</name>
+                    <type>CALCULATED</type>
+                    <key>dns.perf.avg15</key>
+                    <delay>5m</delay>
+                    <history>30d</history>
+                    <trends>90d</trends>
+                    <value_type>FLOAT</value_type>
+                    <units>s</units>
+                    <params>avg(min_foreach(/{HOST.HOST}/net.dns.perf[,*,A,3,1],30m))</params>
+                    <description>Aggregate: for each discovered domain, takes the minimum net.dns.perf value over the last 30 minutes (suppressing occasional spikes), then averages these per-domain minimums across all domains on this host.</description>
+                    <triggers>
+                        <trigger>
+                            <uuid>38c1f473216f43698866908db16664d0</uuid>
+                            <expression>last(/Template DNS Resolution Checks/dns.perf.avg15)&gt;{$DNS.PERF.AVG.THRESHOLD}</expression>
+                            <name>DNS average resolution time above {$DNS.PERF.AVG.THRESHOLD}s</name>
+                            <opdata>Average: {ITEM.LASTVALUE}</opdata>
+                            <priority>WARNING</priority>
+                            <description>The 15-minute average DNS resolution time across all domains on this host exceeded {$DNS.PERF.AVG.THRESHOLD} s.</description>
+                        </trigger>
+                    </triggers>
+                </item>
+            </items>
+            <discovery_rules>
+                <discovery_rule>
+                    <uuid>fbebe641f2054ab1874b870dd98a6ebb</uuid>
+                    <name>DNS expected values discovery (from host interface)</name>
+                    <type>SCRIPT</type>
+                    <key>dns.expected.discovery</key>
+                    <delay>1h</delay>
+                    <params>var p = JSON.parse(value);
+return JSON.stringify([{ &quot;ip&quot;: p.ip, &quot;dns&quot;: p.dns }]);</params>
+                    <timeout>10s</timeout>
+                    <description>Emits one LLD row with the host's configured IP and DNS name, taken from {HOST.IP} and {HOST.DNS} via script parameters.</description>
+                    <parameters>
+                        <parameter>
+                            <name>ip</name>
+                            <value>{HOST.IP}</value>
+                        </parameter>
+                        <parameter>
+                            <name>dns</name>
+                            <value>{HOST.DNS}</value>
+                        </parameter>
+                    </parameters>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#EXP_IP}</lld_macro>
+                            <path>$.ip</path>
+                        </lld_macro_path>
+                        <lld_macro_path>
+                            <lld_macro>{#EXP_DNS}</lld_macro>
+                            <path>$.dns</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <item_prototypes>
+                    <item_prototype>
+                        <uuid>b59ba4e8d4434f14a7c9f7c213443b9f</uuid>
+                        <name>DNS Forward Lookup via Google (8.8.8.8): {#EXP_DNS}</name>
+                        <type>ZABBIX_PASSIVE</type>
+                        <key>net.dns.get[8.8.8.8,{#EXP_DNS},A,3,1]</key>
+                        <delay>5m</delay>
+                        <history>30d</history>
+                        <trends>0</trends>
+                        <value_type>CHAR</value_type>
+                        <description>Resolves {#EXP_DNS} via Google (8.8.8.8). Extracts IP from JSON.</description>
+                        <trigger_prototypes>
+                            <trigger_prototype>
+                                <uuid>15c223e0e10f4e18afe13802eae1faa4</uuid>
+                                <expression>last(/Template DNS Resolution Checks/net.dns.get[8.8.8.8,{#EXP_DNS},A,3,1])&lt;&gt;&quot;{#EXP_IP}&quot;</expression>
+                                <name>DNS Mismatch [Google]: Forward lookup of {#EXP_DNS} returned wrong IP</name>
+                                <opdata>Expected: {#EXP_IP} | Got: {ITEM.LASTVALUE}</opdata>
+                                <priority>HIGH</priority>
+                                <description>Google (8.8.8.8) resolved {#EXP_DNS} to an IP that does not match {#EXP_IP}.</description>
+                            </trigger_prototype>
+                        </trigger_prototypes>
+                        <preprocessing>
+                            <step>
+                                <type>JSONPATH</type>
+                                <parameters>
+                                    <parameter>$.answer_section[0].rdata.a</parameter>
+                                </parameters>
+                                <error_handler>DISCARD_VALUE</error_handler>
+                            </step>
+                        </preprocessing>
+                    </item_prototype>
+                    <item_prototype>
+                        <uuid>105b934098e44154be65604188898073</uuid>
+                        <name>DNS Forward Lookup via Cloudflare (1.1.1.1): {#EXP_DNS}</name>
+                        <type>ZABBIX_PASSIVE</type>
+                        <key>net.dns.get[1.1.1.1,{#EXP_DNS},A,3,1]</key>
+                        <delay>5m</delay>
+                        <history>30d</history>
+                        <trends>0</trends>
+                        <value_type>CHAR</value_type>
+                        <description>Resolves {#EXP_DNS} via Cloudflare (1.1.1.1). Extracts IP from JSON.</description>
+                        <trigger_prototypes>
+                            <trigger_prototype>
+                                <uuid>a6c14587db21414bad5e2152377761da</uuid>
+                                <expression>last(/Template DNS Resolution Checks/net.dns.get[1.1.1.1,{#EXP_DNS},A,3,1])&lt;&gt;&quot;{#EXP_IP}&quot;</expression>
+                                <name>DNS Mismatch [Cloudflare]: Forward lookup of {#EXP_DNS} returned wrong IP</name>
+                                <opdata>Expected: {#EXP_IP} | Got: {ITEM.LASTVALUE}</opdata>
+                                <priority>HIGH</priority>
+                                <description>Cloudflare (1.1.1.1) resolved {#EXP_DNS} to an IP that does not match {#EXP_IP}.</description>
+                            </trigger_prototype>
+                        </trigger_prototypes>
+                        <preprocessing>
+                            <step>
+                                <type>JSONPATH</type>
+                                <parameters>
+                                    <parameter>$.answer_section[0].rdata.a</parameter>
+                                </parameters>
+                                <error_handler>DISCARD_VALUE</error_handler>
+                            </step>
+                        </preprocessing>
+                    </item_prototype>
+                    <item_prototype>
+                        <uuid>0ab9664ee276429a9cc84c23fdf11a7a</uuid>
+                        <name>DNS Forward Lookup via System DNS (System DNS): {#EXP_DNS}</name>
+                        <type>ZABBIX_PASSIVE</type>
+                        <key>net.dns.get[,{#EXP_DNS},A,3,1]</key>
+                        <delay>5m</delay>
+                        <history>30d</history>
+                        <trends>0</trends>
+                        <value_type>CHAR</value_type>
+                        <description>Resolves {#EXP_DNS} via System DNS (System DNS). Extracts IP from JSON.</description>
+                        <trigger_prototypes>
+                            <trigger_prototype>
+                                <uuid>1f71d1ad585341638b3079cc6c9b154c</uuid>
+                                <expression>last(/Template DNS Resolution Checks/net.dns.get[,{#EXP_DNS},A,3,1])&lt;&gt;&quot;{#EXP_IP}&quot;</expression>
+                                <name>DNS Mismatch [System DNS]: Forward lookup of {#EXP_DNS} returned wrong IP</name>
+                                <opdata>Expected: {#EXP_IP} | Got: {ITEM.LASTVALUE}</opdata>
+                                <priority>HIGH</priority>
+                                <description>System DNS (System DNS) resolved {#EXP_DNS} to an IP that does not match {#EXP_IP}.</description>
+                            </trigger_prototype>
+                        </trigger_prototypes>
+                        <preprocessing>
+                            <step>
+                                <type>JSONPATH</type>
+                                <parameters>
+                                    <parameter>$.answer_section[0].rdata.a</parameter>
+                                </parameters>
+                                <error_handler>DISCARD_VALUE</error_handler>
+                            </step>
+                        </preprocessing>
+                    </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+                <discovery_rule>
+                    <uuid>23b7052662c345b1be4f1cf781b81a70</uuid>
+                    <name>DNS performance domains discovery</name>
+                    <type>SCRIPT</type>
+                    <key>dns.perf.domains.discovery</key>
+                    <delay>1h</delay>
+                    <params>var p = JSON.parse(value);
+var list = p.domains.split(&quot;,&quot;);
+var out = [];
+for (var i = 0; i &lt; list.length; i++) {
+    var d = list[i].trim();
+    if (d.length &gt; 0) out.push({ &quot;domain&quot;: d });
+}
+return JSON.stringify(out);</params>
+                    <timeout>10s</timeout>
+                    <description>Splits the comma-separated domain list in {$DNS.PERF.DOMAINS} into one LLD row per domain.</description>
+                    <parameters>
+                        <parameter>
+                            <name>domains</name>
+                            <value>{$DNS.PERF.DOMAINS}</value>
+                        </parameter>
+                    </parameters>
+                    <lld_macro_paths>
+                        <lld_macro_path>
+                            <lld_macro>{#DOMAIN}</lld_macro>
+                            <path>$.domain</path>
+                        </lld_macro_path>
+                    </lld_macro_paths>
+                    <item_prototypes>
+                    <item_prototype>
+                        <uuid>d27bddd07b474f5c9ccd4d20f3340300</uuid>
+                        <name>DNS resolution time (system resolver): {#DOMAIN}</name>
+                        <type>ZABBIX_PASSIVE</type>
+                        <key>net.dns.perf[,{#DOMAIN},A,3,1]</key>
+                        <delay>5m</delay>
+                        <history>30d</history>
+                        <trends>90d</trends>
+                        <value_type>FLOAT</value_type>
+                        <units>s</units>
+                        <description>Measures the time the system resolver needs to resolve {#DOMAIN} (A record). Returns 0 if the service is down.</description>
+                        <trigger_prototypes>
+                            <trigger_prototype>
+                                <uuid>d23e17a508bb43e4b5957a4987b431c1</uuid>
+                                <expression>min(/Template DNS Resolution Checks/net.dns.perf[,{#DOMAIN},A,3,1],#3)&gt;{$DNS.PERF.THRESHOLD}</expression>
+                                <name>DNS resolution of {#DOMAIN} slower than {$DNS.PERF.THRESHOLD}s</name>
+                                <opdata>Resolution time: {ITEM.LASTVALUE}</opdata>
+                                <priority>WARNING</priority>
+                                <description>The fastest of the last 3 resolutions of {#DOMAIN} via the system resolver was still above {$DNS.PERF.THRESHOLD} s.</description>
+                            </trigger_prototype>
+                            <trigger_prototype>
+                                <uuid>9ad872e99d5a4704a32d499271c2b13c</uuid>
+                                <expression>last(/Template DNS Resolution Checks/net.dns.perf[,{#DOMAIN},A,3,1])=0</expression>
+                                <name>DNS resolution of {#DOMAIN} failed (resolver down)</name>
+                                <opdata>Resolution time: {ITEM.LASTVALUE}</opdata>
+                                <priority>HIGH</priority>
+                                <description>net.dns.perf returned 0 for {#DOMAIN}, indicating the system resolver did not respond (service down).</description>
+                            </trigger_prototype>
+                        </trigger_prototypes>
+                    </item_prototype>
+                    </item_prototypes>
+                </discovery_rule>
+            </discovery_rules>
+            <macros>
+                <macro>
+                    <macro>{$DNS.PERF.DOMAINS}</macro>
+                    <value>pilarkto.net,fateasy.com</value>
+                    <description>Comma-separated list of domains whose resolution time is measured via the system resolver. LLD creates/removes items and triggers automatically.</description>
+                </macro>
+                <macro>
+                    <macro>{$DNS.PERF.THRESHOLD}</macro>
+                    <value>0.007</value>
+                    <description>Resolution time threshold in seconds for the performance WARNING trigger (default 0.007 = 7 ms).</description>
+                </macro>
+                <macro>
+                    <macro>{$DNS.PERF.AVG.THRESHOLD}</macro>
+                    <value>0.005</value>
+                    <description>Threshold in seconds for the average resolution time trigger (default 0.005 = 5 ms).</description>
+                </macro>
+            </macros>
+        </template>
+    </templates>
+</zabbix_export>
