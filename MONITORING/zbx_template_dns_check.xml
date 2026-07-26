@@ -233,7 +233,7 @@ return JSON.stringify(out);</params>
             <macros>
                 <macro>
                     <macro>{$DNS.PERF.DOMAINS}</macro>
-                    <value>pilarkto.net,fateasy.com</value>
+                    <value>pilarkto.net,example.com</value>
                     <description>Comma-separated list of domains whose resolution time is measured via the system resolver. LLD creates/removes items and triggers automatically.</description>
                 </macro>
                 <macro>
