@@ -24,7 +24,7 @@
                     <uuid>516dd2a6b3af45189c08f4de2cc1e055</uuid>
                     <name>DNS resolution time: average of per-domain 30-min minimums</name>
                     <type>CALCULATED</type>
-                    <key>dns.perf.avg15</key>
+                    <key>dns.perf.avg</key>
                     <delay>5m</delay>
                     <history>30d</history>
                     <trends>90d</trends>
@@ -35,7 +35,7 @@
                     <triggers>
                         <trigger>
                             <uuid>38c1f473216f43698866908db16664d0</uuid>
-                            <expression>last(/Template DNS Resolution Checks/dns.perf.avg15)&gt;{$DNS.PERF.AVG.THRESHOLD}</expression>
+                            <expression>last(/Template DNS Resolution Checks/dns.perf.avg)&gt;{$DNS.PERF.AVG.THRESHOLD}</expression>
                             <name>DNS average resolution time above {$DNS.PERF.AVG.THRESHOLD}s</name>
                             <opdata>Average: {ITEM.LASTVALUE}</opdata>
                             <priority>WARNING</priority>
@@ -233,7 +233,7 @@ return JSON.stringify(out);</params>
             <macros>
                 <macro>
                     <macro>{$DNS.PERF.DOMAINS}</macro>
-                    <value>pilarkto.net,example.com</value>
+                    <value>pilarkto.net,fateasy.com</value>
                     <description>Comma-separated list of domains whose resolution time is measured via the system resolver. LLD creates/removes items and triggers automatically.</description>
                 </macro>
                 <macro>
