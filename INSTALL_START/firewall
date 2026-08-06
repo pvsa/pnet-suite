@@ -16,6 +16,10 @@ iptables --flush
 iptables -t nat --flush
 iptables -t mangle --flush
 
+echo ">>>>>>> IP6Tables Flush <<<<<<<<"
+ip6tables --flush
+ip6tables -t mangle --flush
+
 # As the default policies, drop all incoming traffic but allow all
 # outgoing traffic.  This will allow us to make outgoing connections
 # from any port, but will only allow incoming connections on the ports
@@ -27,12 +31,18 @@ iptables --policy INPUT DROP
 iptables --policy OUTPUT ACCEPT
 iptables --policy FORWARD DROP
 
+echo ">>>>>>> IP6Tables Policy <<<<<<<<"
+ip6tables --policy INPUT DROP
+ip6tables --policy OUTPUT ACCEPT
+ip6tables --policy FORWARD DROP
+
 ## FORWRDING ALLOW
 # echo 1 > /proc/sys/net/ipv4/ip_forward
 
 # Allow all incoming traffic if it is coming from the local loopback device
 
 iptables -A INPUT -i lo -j ACCEPT
+ip6tables -A INPUT -i lo -j ACCEPT
 
 ### IFACE VARS
 ##Interface IP's
@@ -40,8 +50,9 @@ iptables -A INPUT -i lo -j ACCEPT
 
 
 ##Interface IP Ranges
-# lan_iprange="192.168.2.0/24"
-
+#lan_iprange="192.168.2.0/24"
+#monitoring="8.8.8.8/32"
+#monitoringv6="2001:4860:4860::/64"
 
 ### IFACES
 # lan=eth0
@@ -53,20 +64,24 @@ iptables -A INPUT -i lo -j ACCEPT
 echo ">>>>>>> IPTables Services <<<<<<<<"
 
 iptables -A INPUT  -m state --state ESTABLISHED,RELATED -j ACCEPT
+ip6tables -A INPUT  -m state --state ESTABLISHED,RELATED -j ACCEPT
 
 # RESCUE!!!!! 
 
 # SSH
-iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT 
+iptables -A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT
+ip6tables -A INPUT -p tcp --dport 22 -m state --state NEW -j ACCEPT 
 # WEB
 iptables -A INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
+ip6tables -A INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
 #iptables -A INPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
-# Webmin
-iptables -A INPUT -p tcp --dport 10000 -m state --state NEW -j ACCEPT
+#ip6tables -A INPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
 # Nagios-NRPE
 #iptables -A INPUT -p tcp --dport 5666 -m state --state NEW -j ACCEPT
-
-
+# Monitoring
+#iptables -A INPUT -i $lan -p tcp --dport 10050 -m state --state NEW -j ACCEPT
+#iptables -A INPUT -p tcp --dport 10050 -s $monitoring  -m state --state NEW -j ACCEPT
+#ip6tables -A INPUT -p tcp --dport 10050 -s $monitoringv6  -m state --state NEW -j ACCEPT
 
 #WEITERLEITUNG
 
@@ -79,6 +94,7 @@ iptables -A INPUT -p tcp --dport 10000 -m state --state NEW -j ACCEPT
 # Allow icmp input so that people can ping us
 
 iptables -A INPUT -p icmp -j ACCEPT
+ip6tables -A INPUT -p icmp -j ACCEPT
 
 # Logging: first, eliminate any packets that are going to broadcast
 # addresses, since they will overwhelm the log files if there are any
@@ -97,6 +113,7 @@ echo ">>>>>>> IPTables Log <<<<<<<<"
 # polite and allow people connecting to a blocked port to receive a
 # >connection refused< message instead of timing out after 30 seconds.
 iptables -A INPUT -j REJECT
+ip6tables -A INPUT -j REJECT
 
 # disable echo-color
 echo -e -n "\033[0m"
