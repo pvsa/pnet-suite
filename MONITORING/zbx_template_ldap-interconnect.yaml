@@ -1,0 +1,34 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 9d98341a04774b8d8423e672bb620843
+      name: Templates/Custom
+  templates:
+    - uuid: 0394ab604ced427a80b386dc1a634014
+      template: 'Template Module LDAP-Interconnect'
+      name: 'Template Module LDAP-Interconnect'
+      description: 'Trapper/Trigger für interne LDAP-Verbindungs-Check'
+      groups:
+        - name: Templates/Custom
+      items:
+        - uuid: 13da6bb31b984ee7bcefb7d1cc819b78
+          name: LDAP-Interconnect
+          type: TRAP
+          key: LDAP-Interconnect
+          history: 90d
+          value_type: TEXT
+          tags:
+            - tag: App
+              value: LDAP
+          triggers:
+            - uuid: 03b537812bf94f749e9cedda481b9334
+              expression: 'find(/Template Module LDAP-Interconnect/LDAP-Interconnect,#2,,"ERROR")=2'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'find(/Template Module LDAP-Interconnect/LDAP-Interconnect,,,"OK")=1'
+              name: LDAP-Interconnect
+              priority: HIGH
+              dependencies:
+                - name: 'LDAP service is down on {HOST.NAME}'
+                  expression: 'max(/ldap1/net.tcp.listen[636],#3)=0'
+                - name: 'LDAP service is down on {HOST.NAME}'
+                  expression: 'max(/ldap3/net.tcp.listen[636],#3)=0'

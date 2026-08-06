@@ -1,0 +1,78 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 9d98341a04774b8d8423e672bb620843
+      name: Templates/Custom
+  templates:
+    - uuid: e84b6f6f19f14711b9054f66dc40505a
+      template: 'Template Net Iptables'
+      name: 'Template Net Iptables'
+      groups:
+        - name: Templates/Custom
+      items:
+        - uuid: 4d7fa226503f49329b4df3da9b461159
+          name: iptables-in-usage-byte
+          type: TRAP
+          key: iptables-in-usage-byte
+          history: 90d
+          value_type: TEXT
+        - uuid: 24d0d745e5374e4e941d935c836b069b
+          name: iptables-in-usage-pkg
+          type: TRAP
+          key: iptables-in-usage-pkg
+          history: 90d
+          value_type: TEXT
+        - uuid: 8b18dc0f344246a2a2f2b3db9b9e3e55
+          name: iptables-policies
+          type: TRAP
+          key: iptables-policies
+          history: 90d
+          value_type: TEXT
+          triggers:
+            - uuid: 9b3981b928f74dc0adc7292d8f040cb3
+              expression: 'find(/Template Net Iptables/iptables-policies,#1,"like","ERROR:")=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'find(/Template Net Iptables/iptables-policies,#1,"like","OK:")=1'
+              name: iptables-policies-failed
+              priority: HIGH
+            - uuid: 7da2668f97f54d388a5c0031c9ce01bd
+              expression: 'now()-lastclock(/Template Net Iptables/iptables-policies,#1)>3700'
+              name: iptables-policies-NoUpdate
+              priority: HIGH
+        - uuid: 229f511171c04f9a82a4c6380d9137bd
+          name: iptables-rules
+          type: TRAP
+          key: iptables-rules
+          history: 90d
+          value_type: TEXT
+          triggers:
+            - uuid: fd70e4da3d194af7af657cbfc5a9d179
+              expression: 'find(/Template Net Iptables/iptables-rules,#1,"like","ERROR:")=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'find(/Template Net Iptables/iptables-rules,#1,"like","OK:")=1'
+              name: iptables-rules-failed
+              priority: HIGH
+            - uuid: bf41243d6fcb41998f0d24b738f90401
+              expression: 'now()-lastclock(/Template Net Iptables/iptables-rules,#1)>3700'
+              name: iptables-rules-NoUpdate
+              priority: HIGH
+        - uuid: dfcdae0d98c94dccb0fd6c99c4f1411d
+          name: iptables-status
+          type: TRAP
+          key: iptables-status
+          history: 90d
+          value_type: TEXT
+          triggers:
+            - uuid: 64e1a431eef741868a693119bf298bbc
+              expression: 'find(/Template Net Iptables/iptables-status,#1,"like","ERROR:")=1'
+              recovery_mode: RECOVERY_EXPRESSION
+              recovery_expression: 'find(/Template Net Iptables/iptables-status,#1,"like","OK")=1'
+              name: iptables-state-failed
+              priority: HIGH
+            - uuid: e5c04f1e43974d28b6211ab215c85e8d
+              expression: 'now()-lastclock(/Template Net Iptables/iptables-status,#1)>3700'
+              name: iptables-status-NoUpdate
+              priority: HIGH
+      tags:
+        - tag: Application
+          value: Security

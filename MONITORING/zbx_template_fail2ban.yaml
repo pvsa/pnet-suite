@@ -1,0 +1,60 @@
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 9d98341a04774b8d8423e672bb620843
+      name: Templates/Custom
+  templates:
+    - uuid: 4f5587527d704a1296c10555e8a409ce
+      template: 'Template App Fail2Ban-Checks'
+      name: 'Template App Fail2Ban-Checks'
+      description: 'pnet specific script (pnet-utils)'
+      groups:
+        - name: Templates/Custom
+      items:
+        - uuid: 7a172d67e3ed4f8a9d2545c5d0d21d6f
+          name: fail2Ban-Banned-IPs
+          type: TRAP
+          key: f2bcurbann
+        - uuid: 7ad8bff8a23043319e0dddcae1812800
+          name: Fail2Ban-Currently-Failed
+          type: TRAP
+          key: f2bcurfail
+        - uuid: cc7e76db76d741c09cb69f9de6ef4e6e
+          name: Fail2Ban-Jails
+          type: TRAP
+          key: f2bjails
+          value_type: TEXT
+          triggers:
+            - uuid: f5fbc43f1f3c4732abb3e1991d98d0e1
+              expression: 'find(/Template App Fail2Ban-Checks/f2bjails,#1,"like","ERROR")=1'
+              name: Fail2ban-Jails
+              priority: HIGH
+            - uuid: 9d44f99ba339489992e9edf392f3a682
+              expression: 'now()-lastclock(/Template App Fail2Ban-Checks/f2bjails,#1)>3700'
+              name: Fail2Ban-Jails-NoUpdate
+              priority: HIGH
+        - uuid: 54390d9bc14d404da9d7337cd16161cf
+          name: Fail2Ban-System
+          type: TRAP
+          key: f2bsys
+          value_type: TEXT
+          triggers:
+            - uuid: 1f598b7407294d3bb55bed5ed3fe0bce
+              expression: 'find(/Template App Fail2Ban-Checks/f2bsys,#1,"like","ERROR")=1'
+              name: Fail2Ban-System
+              priority: HIGH
+            - uuid: d827d553e42a4903babe6c344f129ddc
+              expression: 'now()-lastclock(/Template App Fail2Ban-Checks/f2bsys,#1)>3700'
+              name: Fail2Ban-System-NoUpdates
+              priority: HIGH
+        - uuid: 2be5472cb2c14a05a4d85d146628ea11
+          name: Fail2Ban-Server
+          key: 'proc.num[fail2ban-server]'
+          triggers:
+            - uuid: fe35c1d21a3d44cba5d610cfa08c18b4
+              expression: 'last(/Template App Fail2Ban-Checks/proc.num[fail2ban-server],#3)<>1'
+              name: 'f2b-server proc'
+              priority: HIGH
+      tags:
+        - tag: App
+          value: Fail2Ban
