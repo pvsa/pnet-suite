@@ -1,14 +1,13 @@
-#! /bin/bash
-## find latest zabbix log file and open if with less
-## PvSA 3.3.25
+#! /bin/bash                                                                                                                                                                                                                       
+## PvSA 3.3.25 find latest zabbix log file and open if with less                                                                                                                                                                               
+### PvSA 15.8.26 change conecpt to tail and limit log lines and change path
 
-DMIN="-360"
-
-ZBXLOG="$(find /var/log/ -mmin $DMIN -type f |grep zabbix |head -1)"
-#echo $ZBXLOG
-
+ZBXLOG="$(find /var/log/zabbix/ -type f -name *.log |grep zabbix)"
+#echo $ZBXLOG                                                                                                                                                                                                                       
 if [[ -z $ZBXLOG ]]; then
-        echo "no zabbix log file found that was used in the last 59 min"
+        echo "no zabbix log file found"                                                                                                                                                                                            
+        #that was used in the last 59 min"                                                                                                                                                                                         
  else
-    less +F $ZBXLOG
-fi             
+    tail -f -n 25 $ZBXLOG
+fi
+         
