@@ -1,5 +1,6 @@
 # pnet-suite
-PILARKTO.NET Linux Administration-Tools <br>
+
+## PILARKTO.NET Linux Administration-Tools <br>
 <br>
 > INSTALL_START: Script for customizing PNET-Server <br>
 > LOG: Set of scripts to simplify open/see Log-files (less/tail/multitail)<br>
@@ -7,8 +8,10 @@ PILARKTO.NET Linux Administration-Tools <br>
 > TOOLS: Set of handy scripts for administrators<br>
 > UCD: Universal Check Disk: Check disk health and make a report (based on standard linux commands)<br>
 
-# INSTALL
+## INSTALL
 
-cd /usr/local/share/ && git clone https://github.com/pvsa/pnet-suite.git
-## enable LOG-Files (only root accessible log-files)
-ln -s /usr/local/share/pnet-suite/LOG/log.* /usr/sbin
+`cd /usr/local/share/ && git clone https://github.com/pvsa/pnet-suite.git`
+
+Example - enable LOG-Files - only root accessible log-files
+
+`ln -s /usr/local/share/pnet-suite/LOG/log.* /usr/sbin`
