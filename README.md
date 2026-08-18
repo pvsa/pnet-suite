@@ -6,3 +6,9 @@ PILARKTO.NET Linux Administration-Tools <br>
 > MONITORING: Scripts for cron based service checks - partly zabbix related<br>
 > TOOLS: Set of handy scripts for administrators<br>
 > UCD: Universal Check Disk: Check disk health and make a report (based on standard linux commands)<br>
+
+INSTALL
+
+cd /usr/local/share/ && git clone https://github.com/pvsa/pnet-suite.git
+# enable LOG-Files (only root accessible log-files)
+ln -s /usr/local/share/pnet-suite/LOG/log.* /usr/sbin
