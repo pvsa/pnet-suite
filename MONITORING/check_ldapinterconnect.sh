@@ -87,8 +87,8 @@ fi
 LDAPLIST=$(cat $LDAPCONFS| egrep '.*ldap[0-9]*\.p.*net' |egrep -v "^#.*" |egrep -v "^//" |sed "s/\ /\n/g" |egrep '.*ldap[0-9]*\.p.*net' | sed 's/;//g'| sed "s/'//g" |sort |uniq)
 
 for LDAPURL in $LDAPLIST; do
-        LDAPPROTO="$(echo "$LDAPURL" | awk '{split($0,url,":"); print url[1]}')"
-        LDAPHOST="$(echo "$LDAPURL" | awk '{split($0,url,":"); print url[2]}'| sed "s/\///g" )"
+       LDAPPROTO="$(echo "$LDAPURL" | awk '{gsub(/"/,""); split($0,url,":"); print url[1]}')"
+       LDAPHOST="$(echo "$LDAPURL" | awk -F'/' '{gsub(/"/,""); print $3}'| sed "s/\///g" )"
 
         # run check with nmap
         if [ "$LDAPPROTO" == "ldaps" ]; then
