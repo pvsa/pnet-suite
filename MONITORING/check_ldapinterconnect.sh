@@ -98,7 +98,7 @@ for LDAPURL in $LDAPLIST; do
         fi
 
 
-	if ldapwhoami -H "$LDAPURL" -x -D "$LDAPWHO" -w "$LDAPWHOPW" 1>/dev/null 2>&1 ; then
+	if ldapwhoami -H "$LDAPPROTO://$LDAPHOST" -x -D "$LDAPWHO" -w "$LDAPWHOPW" 1>/dev/null 2>&1 ; then
                 CHECK=OK
         else
 		if [ $ERRCOUNT ] && [ $ERRCOUNT -gt 1 ]; then
